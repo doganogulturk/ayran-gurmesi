@@ -56,17 +56,18 @@ export default function Dashboard({ ayrans }: DashboardProps) {
   const radius = 50;
   const circ = 2 * Math.PI * radius;
   const strokeWidth = 14;
-  let accumPercent = 0;
 
   const slices = kategoriler
     .filter(kat => kategorikSayilar[kat] > 0)
-    .map(kat => {
+    .map((kat, index, all) => {
       const count = kategorikSayilar[kat];
       const pct = count / total;
       const dashArray = `${pct * circ} ${circ}`;
-      const dashOffset = -accumPercent * circ;
+      const offsetPercent = all
+        .slice(0, index)
+        .reduce((acc, prevKat) => acc + (kategorikSayilar[prevKat] / total), 0);
+      const dashOffset = -offsetPercent * circ;
       const color = kategoriRenkleri[kat];
-      accumPercent += pct;
       return { kat, count, pct, dashArray, dashOffset, color };
     });
 

@@ -1,13 +1,12 @@
 'use client';
+/* eslint-disable @next/next/no-img-element */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AyranEntry, Kategori, kategoriler, kategoriEtiketleri } from '../types/ayran';
 import { getAyranlar, createAyran, updateAyran, deleteAyran, updateAyranlarSira } from '../lib/ayranlar';
 import AyranForm from '../components/AyranForm';
-import CompareModal from '../components/CompareModal';
 
 type ViewMode = 'grid' | 'list';
-type SortOption = 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc' | 'custom';
 
 const KAT_COLOR: Record<Kategori, string> = {
   yaygin_market: 'var(--kat-yaygin)',
@@ -15,28 +14,12 @@ const KAT_COLOR: Record<Kategori, string> = {
   yoresel: 'var(--kat-yoresel)',
 };
 
-const KAT_DIM: Record<Kategori, string> = {
-  yaygin_market: 'var(--blue-dim)',
-  market_markasi: 'var(--amber-dim)',
-  yoresel: 'var(--green-dim)',
-};
-
-function formatDate(d: string | null | undefined) {
-  if (!d) return null;
-  const p = d.split('-');
-  return p.length === 3 ? `${p[2]}.${p[1]}.${p[0]}` : d;
-}
-
 /* ── Card ─────────────────────────────────────────────── */
 function AyranCard({
-  item, onEdit, onDelete, onCompareToggle, isChecked,
-  isSortingMode, onDragStart, onDragOver, onDrop, onMove, isFirst, isLast,
+  item, onEdit, isSortingMode, onDragStart, onDragOver, onDrop, onMove, isFirst, isLast, orderNumber,
 }: {
   item: AyranEntry;
   onEdit: (i: AyranEntry) => void;
-  onDelete: (id: string) => void;
-  onCompareToggle: (id: string, v: boolean) => void;
-  isChecked: boolean;
   isSortingMode: boolean;
   onDragStart: (id: string) => void;
   onDragOver: (e: React.DragEvent, id: string) => void;
@@ -44,18 +27,19 @@ function AyranCard({
   onMove: (id: string, dir: 'up' | 'down') => void;
   isFirst: boolean;
   isLast: boolean;
+  orderNumber: number;
 }) {
-  const color = KAT_COLOR[item.kategori];
   return (
     <div
-      className={`ayran-card ${isSortingMode ? 'sorting-active' : ''}`}
-      style={{ '--card-color': color } as React.CSSProperties}
+      className={`ayran-card${isSortingMode ? ' sorting-active' : ''}${item.eksi_mi ? ' eksi-card' : ''}`}
       draggable={isSortingMode}
+      onClick={() => !isSortingMode && onEdit(item)}
       onDragStart={() => onDragStart(item.id)}
       onDragOver={(e) => onDragOver(e, item.id)}
       onDrop={() => onDrop(item.id)}
     >
       <div className="card-img-wrapper">
+        <span className="card-order-badge">{orderNumber}</span>
         {item.fotograf_url ? (
           <img src={item.fotograf_url} className="card-img" alt={item.marka} />
         ) : (
@@ -64,7 +48,6 @@ function AyranCard({
             <span>Görsel yok</span>
           </div>
         )}
-        {item.eksi_mi && <span className="card-badge-eksi">🍋 Ekşi</span>}
 
         {isSortingMode && (
           <div className="card-sort-overlay" onClick={e => e.stopPropagation()}>
@@ -105,28 +88,9 @@ function AyranCard({
           {item.kategori === 'yoresel' && item.yore && (
             <span className="card-meta-tag">📍 {item.yore}</span>
           )}
-          {item.icme_tarihi && (
-            <span className="card-meta-tag">📅 {formatDate(item.icme_tarihi)}</span>
-          )}
         </div>
 
         {item.notlar && <p className="card-notes">{item.notlar}</p>}
-      </div>
-
-      <div className="card-footer">
-        <label>
-          <input
-            type="checkbox"
-            checked={isChecked}
-            onChange={e => onCompareToggle(item.id, e.target.checked)}
-            disabled={isSortingMode}
-          />
-          Karşılaştır
-        </label>
-        <div style={{ display: 'flex', gap: '2px' }}>
-          <button onClick={() => onEdit(item)} className="btn btn-ghost" title="Düzenle" disabled={isSortingMode}>✏️</button>
-          <button onClick={() => onDelete(item.id)} className="btn btn-danger-ghost" title="Sil" disabled={isSortingMode}>🗑️</button>
-        </div>
       </div>
     </div>
   );
@@ -134,14 +98,10 @@ function AyranCard({
 
 /* ── List Row ─────────────────────────────────────────── */
 function AyranListRow({
-  item, onEdit, onDelete, onCompareToggle, isChecked,
-  isSortingMode, onDragStart, onDragOver, onDrop, onMove, isFirst, isLast,
+  item, onEdit, isSortingMode, onDragStart, onDragOver, onDrop, onMove, isFirst, isLast, orderNumber,
 }: {
   item: AyranEntry;
   onEdit: (i: AyranEntry) => void;
-  onDelete: (id: string) => void;
-  onCompareToggle: (id: string, v: boolean) => void;
-  isChecked: boolean;
   isSortingMode: boolean;
   onDragStart: (id: string) => void;
   onDragOver: (e: React.DragEvent, id: string) => void;
@@ -149,13 +109,13 @@ function AyranListRow({
   onMove: (id: string, dir: 'up' | 'down') => void;
   isFirst: boolean;
   isLast: boolean;
+  orderNumber: number;
 }) {
-  const color = KAT_COLOR[item.kategori];
   return (
     <div
-      className={`list-row ${isSortingMode ? 'sorting-active' : ''}`}
-      style={{ '--card-color': color } as React.CSSProperties}
+      className={`list-row${isSortingMode ? ' sorting-active' : ''}${item.eksi_mi ? ' eksi-row' : ''}`}
       draggable={isSortingMode}
+      onClick={() => !isSortingMode && onEdit(item)}
       onDragStart={() => onDragStart(item.id)}
       onDragOver={(e) => onDragOver(e, item.id)}
       onDrop={() => onDrop(item.id)}
@@ -182,38 +142,24 @@ function AyranListRow({
         </div>
       )}
 
+      <span className="list-order-number">{orderNumber}</span>
+
       {item.fotograf_url
         ? <img src={item.fotograf_url} className="list-img" alt={item.marka} />
         : <div className="list-img-placeholder">🥛</div>
       }
 
       <div className="list-info">
-        <div className="list-title">{item.marka}{item.urun_adi ? ` — ${item.urun_adi}` : ''}</div>
+        <div className="list-title">
+          {item.marka}{item.urun_adi ? ` — ${item.urun_adi}` : ''}
+        </div>
         <div className="list-meta">
           {item.kategori === 'market_markasi' && item.market_adi && <span>🏪 {item.market_adi}</span>}
           {item.kategori === 'yoresel' && item.yore && <span>📍 {item.yore}</span>}
-          {item.icme_tarihi && <span>📅 {formatDate(item.icme_tarihi)}</span>}
         </div>
       </div>
 
       {item.notlar && <span className="list-notes">{item.notlar}</span>}
-
-      {item.eksi_mi && <span className="eksi-badge-sm">🍋 Ekşi</span>}
-
-      <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.75rem', color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none', flexShrink: 0 }}>
-        <input
-          type="checkbox"
-          checked={isChecked}
-          onChange={e => onCompareToggle(item.id, e.target.checked)}
-          style={{ accentColor: 'var(--blue)', width: '14px', height: '14px' }}
-          disabled={isSortingMode}
-        />
-      </label>
-
-      <div className="list-actions">
-        <button onClick={() => onEdit(item)} className="btn btn-ghost" title="Düzenle" disabled={isSortingMode}>✏️</button>
-        <button onClick={() => onDelete(item.id)} className="btn btn-danger-ghost" title="Sil" disabled={isSortingMode}>🗑️</button>
-      </div>
     </div>
   );
 }
@@ -225,40 +171,39 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   const [view, setView] = useState<ViewMode>('grid');
-  const [search, setSearch] = useState('');
   const [eksiFilter, setEksiFilter] = useState(false);
-  const [sort, setSort] = useState<SortOption>('date-desc');
-  const [theme, setTheme] = useState('dark');
+  const [isSortingMode, setIsSortingMode] = useState(false);
+  const [theme, setTheme] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'dark';
+    return localStorage.getItem('ayran-theme') || 'dark';
+  });
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<AyranEntry | null>(null);
-  const [compareIds, setCompareIds] = useState<string[]>([]);
-  const [isCompareOpen, setIsCompareOpen] = useState(false);
-
-  const [isMounted, setIsMounted] = useState(false);
-  const [isSortingMode, setIsSortingMode] = useState(false);
+  const [initialCategory, setInitialCategory] = useState<Kategori | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = async () => {
     setLoading(true);
     setError(null);
     try {
       setAyrans(await getAyranlar());
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    setIsMounted(true);
-    const t = localStorage.getItem('ayran-theme') || 'dark';
-    setTheme(t);
-    document.documentElement.setAttribute('data-theme', t);
-    load();
-  }, [load]);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, []);
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -269,7 +214,7 @@ export default function Home() {
 
   const handleSave = async (entry: AyranEntry) => {
     try {
-      const { id, created_at, ...fields } = entry;
+      const { id, ...fields } = entry;
       if (editingItem) {
         const updated = await updateAyran(id, fields);
         setAyrans(prev => prev.map(a => a.id === id ? updated : a));
@@ -279,28 +224,25 @@ export default function Home() {
       }
       setIsFormOpen(false);
       setEditingItem(null);
-    } catch (e: any) {
-      alert('Hata: ' + e.message);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      alert('Hata: ' + message);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bu kaydı silmek istediğinizden emin misiniz?')) return;
+  const handleDelete = async () => {
+    if (!editingItem) return;
+    const confirmed = window.confirm('Bu ayran kaydını silmek istediğinizden emin misiniz?');
+    if (!confirmed) return;
+
     try {
-      await deleteAyran(id);
-      setAyrans(prev => prev.filter(a => a.id !== id));
-      setCompareIds(prev => prev.filter(c => c !== id));
-    } catch (e: any) {
-      alert('Silme hatası: ' + e.message);
-    }
-  };
-
-  const handleCompare = (id: string, checked: boolean) => {
-    if (checked) {
-      if (compareIds.length >= 3) { alert('En fazla 3 ayran karşılaştırılabilir.'); return; }
-      setCompareIds(prev => [...prev, id]);
-    } else {
-      setCompareIds(prev => prev.filter(c => c !== id));
+      await deleteAyran(editingItem.id);
+      setAyrans(prev => prev.filter(a => a.id !== editingItem.id));
+      setIsFormOpen(false);
+      setEditingItem(null);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      alert('Silme işlemi sırasında hata oluştu: ' + message);
     }
   };
 
@@ -315,8 +257,9 @@ export default function Home() {
         updates.forEach(u => { byId[u.id] = u.sira; });
         return prev.map(a => ({ ...a, sira: byId[a.id] ?? a.sira }));
       });
-    } catch (e: any) {
-      alert('Sıralama kaydedilemedi: ' + e.message);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      alert('Sıralama kaydedilemedi: ' + message);
     } finally {
       setTimeout(() => setIsSaving(false), 800);
     }
@@ -347,32 +290,19 @@ export default function Home() {
 
   // Filtre + sıralama
   const filtered = ayrans.filter(a => {
-    const q = search.toLowerCase();
-    const match = !q ||
-      a.marka.toLowerCase().includes(q) ||
-      (a.urun_adi || '').toLowerCase().includes(q) ||
-      (a.notlar || '').toLowerCase().includes(q) ||
-      (a.yore || '').toLowerCase().includes(q) ||
-      (a.market_adi || '').toLowerCase().includes(q);
-    return match && (!eksiFilter || a.eksi_mi);
+    return (!eksiFilter || a.eksi_mi);
   });
 
   const sorted = [...filtered].sort((a, b) => {
-    if (isSortingMode || sort === 'custom') {
-      // Özel sıralama: sira alanına göre, eşitse created_at'a göre
+    if (isSortingMode) {
       const siaDiff = (a.sira ?? 0) - (b.sira ?? 0);
       if (siaDiff !== 0) return siaDiff;
-      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
     }
-    if (sort === 'name-asc') return a.marka.localeCompare(b.marka, 'tr');
-    if (sort === 'name-desc') return b.marka.localeCompare(a.marka, 'tr');
-    if (sort === 'date-asc') return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
     return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
   });
 
   // İstatistikler
   const total = ayrans.length;
-  const uniqueMarkas = new Set(ayrans.map(a => a.marka)).size;
   const eksiCount = ayrans.filter(a => a.eksi_mi).length;
 
   const katCounts = kategoriler.reduce((acc, k) => {
@@ -380,24 +310,22 @@ export default function Home() {
     return acc;
   }, {} as Record<Kategori, number>);
 
-  const favKat = kategoriler.reduce((best, k) =>
-    katCounts[k] > katCounts[best] ? k : best, kategoriler[0]);
+  const eksiKatCounts = kategoriler.reduce((acc, k) => {
+    acc[k] = ayrans.filter(a => a.kategori === k && a.eksi_mi).length;
+    return acc;
+  }, {} as Record<Kategori, number>);
+
+  const kategoriChartLabels: Record<Kategori, string> = {
+    yaygin_market: 'Yaygın Market',
+    market_markasi: 'Market Markası',
+    yoresel: 'Yöresel Marka',
+  };
 
   // Kategori bazlı gruplama
   const byKategori = kategoriler.map(kat => ({
     kat,
     items: sorted.filter(a => a.kategori === kat),
   })).filter(g => g.items.length > 0);
-
-  const compareItems = ayrans.filter(a => compareIds.includes(a.id));
-
-  if (!isMounted) {
-    return (
-      <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-app)', color: 'var(--text-secondary)' }}>
-        <span>Yükleniyor…</span>
-      </div>
-    );
-  }
 
   return (
     <div className="app-container">
@@ -414,10 +342,6 @@ export default function Home() {
           <button className="btn btn-secondary btn-ghost" onClick={toggleTheme} title="Tema">
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
-          <button className="btn btn-primary" onClick={() => { setEditingItem(null); setIsFormOpen(true); }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5v14"/></svg>
-            Ayran Ekle
-          </button>
         </div>
       </header>
 
@@ -431,57 +355,81 @@ export default function Home() {
 
       {/* Dashboard */}
       <div className="dashboard">
-        <div className="stat-card" style={{ '--card-accent': 'var(--blue)' } as React.CSSProperties}>
-          <span className="stat-label">Toplam Kayıt</span>
-          <span className="stat-value">{total}</span>
-          <span className="stat-sub">{uniqueMarkas} farklı marka</span>
-        </div>
-        <div className="stat-card" style={{ '--card-accent': 'var(--amber)' } as React.CSSProperties}>
-          <span className="stat-label">Ekşi Ayran</span>
-          <span className="stat-value">{eksiCount}</span>
-          <span className="stat-sub">%{total ? Math.round(eksiCount / total * 100) : 0} oranında</span>
-        </div>
-        {kategoriler.map(kat => (
-          <div
-            key={kat}
-            className="stat-card"
-            style={{ '--card-accent': KAT_COLOR[kat] } as React.CSSProperties}
-          >
-            <span className="stat-label">{kategoriEtiketleri[kat]}</span>
-            <span className="stat-value">{katCounts[kat]}</span>
-            <span className="stat-sub">
-              {katCounts[kat] > 0 && kat === favKat ? '👑 En çok' : 'kayıt'}
-            </span>
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <div>
+              <span className="kpi-label">Toplam Kayıt</span>
+            </div>
+            <span className="kpi-total">{total}</span>
           </div>
-        ))}
+
+          <div className="kpi-bar-stack">
+            <div className="kpi-bar-track">
+              {kategoriler.map(kat => {
+                const count = katCounts[kat];
+                const pct = total ? (count / total) * 100 : 0;
+                return (
+                  <div
+                    key={kat}
+                    className="kpi-bar-segment"
+                    style={{ width: `${pct}%`, background: KAT_COLOR[kat] }}
+                  >
+                    {count > 0 && <span className="kpi-bar-segment-label">{count}</span>}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="kpi-bar-legends">
+              {kategoriler.map(kat => (
+                <div key={kat} className="kpi-legend-item">
+                  <span className="kpi-legend-dot" style={{ background: KAT_COLOR[kat] }} />
+                  <span>{kategoriChartLabels[kat]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-header">
+            <div>
+              <span className="kpi-label">Ekşi Ayran</span>
+            </div>
+            <span className="kpi-total">{eksiCount}</span>
+          </div>
+
+          <div className="kpi-bar-stack">
+            <div className="kpi-bar-track">
+              {kategoriler.map(kat => {
+                const count = eksiKatCounts[kat];
+                const pct = eksiCount ? (count / eksiCount) * 100 : 0;
+                return (
+                  <div
+                    key={kat}
+                    className="kpi-bar-segment"
+                    style={{ width: `${pct}%`, background: KAT_COLOR[kat] }}
+                  >
+                    {count > 0 && <span className="kpi-bar-segment-label">{count}</span>}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="kpi-bar-legends">
+              {kategoriler.map(kat => (
+                <div key={kat} className="kpi-legend-item">
+                  <span className="kpi-legend-dot" style={{ background: KAT_COLOR[kat] }} />
+                  <span>{kategoriChartLabels[kat]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Toolbar */}
       <div className="toolbar">
-        <div className="search-wrapper">
-          <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Marka, yöre, notlarda ara…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-
-        <select
-          className="filter-select"
-          value={isSortingMode ? 'custom' : sort}
-          onChange={e => { setIsSortingMode(false); setSort(e.target.value as SortOption); }}
-          disabled={isSortingMode}
-        >
-          <option value="date-desc">En Yeni</option>
-          <option value="date-asc">En Eski</option>
-          <option value="name-asc">Marka A→Z</option>
-          <option value="name-desc">Marka Z→A</option>
-          <option value="custom">Özel Sıralama</option>
-        </select>
-
         <button
           className={`btn-sort-toggle${isSortingMode ? ' active' : ''}`}
           onClick={() => setIsSortingMode(p => !p)}
@@ -545,21 +493,21 @@ export default function Home() {
         </div>
       ) : (
         byKategori.map(({ kat, items }) => (
-          <section key={kat} className="cat-section">
+          <section key={kat} className="cat-section" style={{ borderLeft: `4px solid ${KAT_COLOR[kat]}` }}>
             {/* Kategori başlığı */}
             <div className="cat-section-header">
-              <span
-                className="cat-badge"
-                style={{
-                  background: KAT_DIM[kat],
-                  color: KAT_COLOR[kat],
-                  border: `1px solid ${KAT_COLOR[kat]}44`,
-                }}
-              >
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: KAT_COLOR[kat], display: 'inline-block' }} />
-                {kategoriEtiketleri[kat]}
-              </span>
-              <span className="cat-count">{items.length} kayıt</span>
+              <span className="cat-badge">{kategoriEtiketleri[kat]}</span>
+              <div className="cat-header-actions">
+                <span className="cat-count">{items.length} kayıt</span>
+                <button
+                  type="button"
+                  className="cat-add-btn"
+                  onClick={() => { setEditingItem(null); setInitialCategory(kat); setIsFormOpen(true); }}
+                  title={`${kategoriEtiketleri[kat]} için yeni ayran ekle`}
+                >
+                  + Ayran Ekle
+                </button>
+              </div>
             </div>
 
             {/* Grid ya da Liste */}
@@ -569,10 +517,8 @@ export default function Home() {
                   <AyranCard
                     key={item.id}
                     item={item}
-                    isChecked={compareIds.includes(item.id)}
-                    onCompareToggle={handleCompare}
+                    orderNumber={idx + 1}
                     onEdit={i => { setEditingItem(i); setIsFormOpen(true); }}
-                    onDelete={handleDelete}
                     isSortingMode={isSortingMode}
                     onDragStart={id => setDragId(id)}
                     onDragOver={e => e.preventDefault()}
@@ -589,10 +535,8 @@ export default function Home() {
                   <AyranListRow
                     key={item.id}
                     item={item}
-                    isChecked={compareIds.includes(item.id)}
-                    onCompareToggle={handleCompare}
+                    orderNumber={idx + 1}
                     onEdit={i => { setEditingItem(i); setIsFormOpen(true); }}
-                    onDelete={handleDelete}
                     isSortingMode={isSortingMode}
                     onDragStart={id => setDragId(id)}
                     onDragOver={e => e.preventDefault()}
@@ -609,15 +553,6 @@ export default function Home() {
       )}
 
       {/* Karşılaştırma */}
-      {!isSortingMode && compareIds.length >= 2 && (
-        <button
-          className="btn btn-primary compare-trigger-btn"
-          onClick={() => setIsCompareOpen(true)}
-        >
-          ⚖️ Karşılaştır ({compareIds.length})
-        </button>
-      )}
-
       {/* Sıralama Kaydediliyor Toast */}
       {isSaving && (
         <div className="saving-toast">
@@ -627,16 +562,13 @@ export default function Home() {
       )}
 
       <AyranForm
+        key={`${editingItem?.id ?? 'new'}-${initialCategory ?? 'default'}-${isFormOpen ? 'open' : 'closed'}`}
         isOpen={isFormOpen}
         editingItem={editingItem}
-        onClose={() => { setIsFormOpen(false); setEditingItem(null); }}
+        initialCategory={initialCategory ?? undefined}
+        onClose={() => { setIsFormOpen(false); setEditingItem(null); setInitialCategory(null); }}
         onSave={handleSave}
-      />
-
-      <CompareModal
-        isOpen={isCompareOpen}
-        compareItems={compareItems}
-        onClose={() => setIsCompareOpen(false)}
+        onDelete={handleDelete}
       />
     </div>
   );

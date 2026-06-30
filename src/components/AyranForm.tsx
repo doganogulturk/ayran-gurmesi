@@ -1,53 +1,30 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { AyranEntry, Kategori, kategoriler, kategoriEtiketleri } from '../types/ayran';
 import { uploadFotograf } from '../lib/ayranlar';
 
 interface AyranFormProps {
   isOpen: boolean;
   editingItem: AyranEntry | null;
+  initialCategory?: Kategori;
   onClose: () => void;
   onSave: (entry: AyranEntry) => void;
+  onDelete?: () => void;
 }
 
-export default function AyranForm({ isOpen, editingItem, onClose, onSave }: AyranFormProps) {
+export default function AyranForm({ isOpen, editingItem, initialCategory, onClose, onSave, onDelete }: AyranFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
-  const [marka, setMarka] = useState('');
-  const [urunAdi, setUrunAdi] = useState('');
-  const [kategori, setKategori] = useState<Kategori>('yaygin_market');
-  const [eksiMi, setEksiMi] = useState(false);
-  const [marketAdi, setMarketAdi] = useState('');
-  const [yore, setYore] = useState('');
-  const [notlar, setNotlar] = useState('');
-  const [icmeTarihi, setIcmeTarihi] = useState('');
-  const [fotografUrl, setFotografUrl] = useState('');
-
-  useEffect(() => {
-    if (editingItem) {
-      setMarka(editingItem.marka);
-      setUrunAdi(editingItem.urun_adi || '');
-      setKategori(editingItem.kategori);
-      setEksiMi(editingItem.eksi_mi);
-      setMarketAdi(editingItem.market_adi || '');
-      setYore(editingItem.yore || '');
-      setNotlar(editingItem.notlar || '');
-      setIcmeTarihi(editingItem.icme_tarihi || '');
-      setFotografUrl(editingItem.fotograf_url || '');
-    } else {
-      setMarka('');
-      setUrunAdi('');
-      setKategori('yaygin_market');
-      setEksiMi(false);
-      setMarketAdi('');
-      setYore('');
-      setNotlar('');
-      setIcmeTarihi(new Date().toISOString().split('T')[0]);
-      setFotografUrl('');
-    }
-  }, [editingItem, isOpen]);
+  const [marka, setMarka] = useState(editingItem?.marka ?? '');
+  const [urunAdi, setUrunAdi] = useState(editingItem?.urun_adi ?? '');
+  const [kategori, setKategori] = useState<Kategori>(editingItem?.kategori ?? initialCategory ?? 'yaygin_market');
+  const [eksiMi, setEksiMi] = useState(editingItem?.eksi_mi ?? false);
+  const [marketAdi, setMarketAdi] = useState(editingItem?.market_adi ?? '');
+  const [yore, setYore] = useState(editingItem?.yore ?? '');
+  const [notlar] = useState(editingItem?.notlar ?? '');
+  const [fotografUrl, setFotografUrl] = useState(editingItem?.fotograf_url ?? '');
 
   if (!isOpen) return null;
 
@@ -65,7 +42,6 @@ export default function AyranForm({ isOpen, editingItem, onClose, onSave }: Ayra
       market_adi: kategori === 'market_markasi' ? (marketAdi.trim() || null) : null,
       yore: kategori === 'yoresel' ? (yore.trim() || null) : null,
       notlar: notlar.trim() || null,
-      icme_tarihi: icmeTarihi || null,
       fotograf_url: fotografUrl.trim() || null,
     });
   };
@@ -79,8 +55,9 @@ export default function AyranForm({ isOpen, editingItem, onClose, onSave }: Ayra
     try {
       const url = await uploadFotograf(file);
       setFotografUrl(url);
-    } catch (err: any) {
-      alert('Fotoğraf yüklenirken hata oluştu: ' + err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      alert('Fotoğraf yüklenirken hata oluştu: ' + message);
     } finally {
       setUploading(false);
     }
@@ -103,79 +80,68 @@ export default function AyranForm({ isOpen, editingItem, onClose, onSave }: Ayra
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* Marka & Ürün Adı */}
-          <div className="form-row form-row-2">
+          {/* Marka */}
+          <div className="form-row">
             <div className="form-group">
               <label htmlFor="ayranMarka" className="form-label">Marka *</label>
               <input
                 type="text"
                 id="ayranMarka"
                 className="form-input"
-                placeholder="Örn: Sütaş, Migros, Köy Lezzeti"
                 value={marka}
                 onChange={(e) => setMarka(e.target.value)}
                 required
               />
             </div>
+          </div>
+
+          {/* Ürün Adı */}
+          <div className="form-row">
             <div className="form-group">
               <label htmlFor="ayranUrunAdi" className="form-label">Ürün Adı</label>
               <input
                 type="text"
                 id="ayranUrunAdi"
                 className="form-input"
-                placeholder="Örn: Sütaş Ayran 200ml (opsiyonel)"
                 value={urunAdi}
                 onChange={(e) => setUrunAdi(e.target.value)}
               />
             </div>
           </div>
 
-          {/* Kategori & Ekşi */}
-          <div className="form-row form-row-2">
+          {/* Kategori */}
+          <div className="form-row">
             <div className="form-group">
-              <label htmlFor="ayranKategori" className="form-label">Kategori *</label>
-              <select
-                id="ayranKategori"
-                className="form-input"
-                value={kategori}
-                onChange={(e) => setKategori(e.target.value as Kategori)}
-                required
-              >
+              <span className="form-label">Kategori *</span>
+              <div className="radio-group">
                 {kategoriler.map((kat) => (
-                  <option key={kat} value={kat}>{kategoriEtiketleri[kat]}</option>
+                  <label key={kat} className={`radio-option ${kategori === kat ? 'checked' : ''}`}>
+                    <input
+                      type="radio"
+                      name="kategori"
+                      value={kat}
+                      checked={kategori === kat}
+                      onChange={() => setKategori(kat)}
+                    />
+                    <span>{kategoriEtiketleri[kat]}</span>
+                  </label>
                 ))}
-              </select>
-            </div>
-            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '24px' }}>
-              <label className="form-label" style={{ margin: 0 }}>Ekşi Ayran mı?</label>
-              <div
-                id="eksiToggle"
-                onClick={() => setEksiMi(prev => !prev)}
-                style={{
-                  width: '52px',
-                  height: '28px',
-                  borderRadius: '14px',
-                  background: eksiMi ? 'hsl(38, 92%, 50%)' : 'var(--border-color)',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  transition: 'background 0.25s',
-                  flexShrink: 0,
-                }}
-              >
-                <span style={{
-                  position: 'absolute',
-                  top: '4px',
-                  left: eksiMi ? '28px' : '4px',
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '50%',
-                  background: '#fff',
-                  transition: 'left 0.25s',
-                }} />
               </div>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                {eksiMi ? '🍋 Evet' : 'Hayır'}
-              </span>
+            </div>
+          </div>
+
+          {/* Ekşi */}
+          <div className="form-row">
+            <div className="form-group form-group-inline">
+              <span className="form-label">Ekşi</span>
+              <button
+                type="button"
+                className={`toggle-button ${eksiMi ? 'active' : ''}`}
+                onClick={() => setEksiMi(prev => !prev)}
+                aria-pressed={eksiMi}
+              >
+                <span className="toggle-thumb" />
+              </button>
             </div>
           </div>
 
@@ -209,18 +175,6 @@ export default function AyranForm({ isOpen, editingItem, onClose, onSave }: Ayra
             </div>
           )}
 
-          {/* Tarih */}
-          <div className="form-group">
-            <label htmlFor="ayranTarih" className="form-label">İçildiği Tarih</label>
-            <input
-              type="date"
-              id="ayranTarih"
-              className="form-input"
-              value={icmeTarihi}
-              onChange={(e) => setIcmeTarihi(e.target.value)}
-            />
-          </div>
-
           {/* Fotoğraf Yükleme */}
           <div className="form-group">
             <label className="form-label">Fotoğraf (Supabase Storage)</label>
@@ -235,13 +189,14 @@ export default function AyranForm({ isOpen, editingItem, onClose, onSave }: Ayra
                 <span>⏳ Yükleniyor...</span>
               ) : fotografUrl ? (
                 <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={fotografUrl} className="upload-preview" alt="Önizleme" style={{ display: 'block' }} />
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>Değiştirmek için tıkla</span>
                 </>
               ) : (
                 <>
                   <span>📷 Fotoğraf Seç veya Sürükle</span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Supabase Storage'a yüklenir</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Supabase Storage&apos;a yüklenir</span>
                 </>
               )}
             </div>
@@ -254,24 +209,25 @@ export default function AyranForm({ isOpen, editingItem, onClose, onSave }: Ayra
             />
           </div>
 
-          {/* Notlar */}
-          <div className="form-group">
-            <label htmlFor="ayranNotlar" className="form-label">Gözlemler / Yorumlar</label>
-            <textarea
-              id="ayranNotlar"
-              className="form-input"
-              placeholder="Tadı nasıldı? Nerede içtin? Dikkat çeken özellikleri neler?"
-              value={notlar}
-              onChange={(e) => setNotlar(e.target.value)}
-              rows={4}
-            />
-          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginTop: '20px' }}>
+            {editingItem ? (
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={onDelete}
+              >
+                Sil
+              </button>
+            ) : (
+              <div />
+            )}
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Vazgeç</button>
-            <button type="submit" className="btn btn-primary" disabled={uploading}>
-              {uploading ? 'Fotoğraf yükleniyor...' : 'Kaydet'}
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', width: '100%' }}>
+              <button type="button" className="btn btn-secondary" onClick={onClose}>Vazgeç</button>
+              <button type="submit" className="btn btn-primary" disabled={uploading}>
+                {uploading ? 'Fotoğraf yükleniyor...' : 'Kaydet'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

@@ -16,7 +16,7 @@ const plusJakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "Ayran Gurmesi | İçtiğin Ayranları Keşfet ve Sırala",
-  description: "Bugüne kadar içtiğiniz ayranları kaydedebileceğiniz, puanlayabileceğiniz, detaylı kıvam, tuz ve ekşilik analizleriyle karşılaştırıp listeleyebileceğiniz modern ayran günlüğü.",
+  description: "Bugüne kadar içtiğiniz ayranları kaydedebileceğiniz, puanlayabileceğiniz ve kolayca listeleyebileceğiniz modern ayran günlüğü.",
 };
 
 export default function RootLayout({
