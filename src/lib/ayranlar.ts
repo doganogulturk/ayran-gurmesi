@@ -48,11 +48,14 @@ export async function deleteAyran(id: string): Promise<void> {
 }
 
 export async function updateAyranlarSira(
-  updates: { id: string; sira: number }[]
+  updates: { id: string; sira?: number; sira_eksi?: number }[]
 ): Promise<void> {
-  const promises = updates.map(u =>
-    supabase.from(TABLE).update({ sira: u.sira }).eq('id', u.id)
-  );
+  const promises = updates.map(u => {
+    const payload: Record<string, number> = {};
+    if (typeof u.sira === 'number') payload.sira = u.sira;
+    if (typeof u.sira_eksi === 'number') payload.sira_eksi = u.sira_eksi;
+    return supabase.from(TABLE).update(payload).eq('id', u.id);
+  });
   const results = await Promise.all(promises);
   for (const r of results) {
     if (r.error) throw r.error;
