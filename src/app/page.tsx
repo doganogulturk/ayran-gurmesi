@@ -37,66 +37,67 @@ function AyranCard({
   orderNumber: number;
 }) {
   return (
-    <div
-      className={`ayran-card${isSortingMode ? ' sorting-active' : ''}${item.eksi_mi ? ' eksi-card' : ''}`}
-      draggable={isSortingMode}
-      onClick={() => !isSortingMode && onEdit(item)}
-      onDragStart={() => onDragStart(item.id)}
-      onDragOver={(e) => onDragOver(e, item.id)}
-      onDrop={() => onDrop(item.id)}
-    >
-      <div className="card-img-wrapper">
-        <span className="card-order-badge">{orderNumber}</span>
-        {item.fotograf_url ? (
-          <img src={item.fotograf_url} className="card-img" alt={item.marka} />
-        ) : (
-          <div className="card-img-placeholder">
-            <span className="card-initials">{getBrandInitials(item.marka)}</span>
-          </div>
-        )}
-
-        {isSortingMode && (
-          <div className="card-sort-overlay" onClick={e => e.stopPropagation()}>
-            <button
-              onClick={(e) => { e.stopPropagation(); onMove(item.id, 'up'); }}
-              className="btn-sort"
-              disabled={isFirst}
-              title="Yukarı Taşı"
-            >
-              ▲
-            </button>
-            <div className="drag-handle-indicator">
-              <span>⠿</span>
-              <span style={{ fontSize: '0.65rem', marginTop: '-2px' }}>Sürükle</span>
+    <div className="card-with-order">
+      <span className="item-order-number">{orderNumber}</span>
+      <div
+        className={`ayran-card${isSortingMode ? ' sorting-active' : ''}`}
+        draggable={isSortingMode}
+        onClick={() => !isSortingMode && onEdit(item)}
+        onDragStart={() => onDragStart(item.id)}
+        onDragOver={(e) => onDragOver(e, item.id)}
+        onDrop={() => onDrop(item.id)}
+      >
+        {item.eksi_mi && <span className="eksi-badge">🍋 Ekşi</span>}
+        <div className="card-img-wrapper">
+          {item.fotograf_url ? (
+            <img src={item.fotograf_url} className="card-img" alt={item.marka} />
+          ) : (
+            <div className="card-img-placeholder">
+              <span className="card-initials">{getBrandInitials(item.marka)}</span>
             </div>
-            <button
-              onClick={(e) => { e.stopPropagation(); onMove(item.id, 'down'); }}
-              className="btn-sort"
-              disabled={isLast}
-              title="Aşağı Taşı"
-            >
-              ▼
-            </button>
+          )}
+
+          {isSortingMode && (
+            <div className="card-sort-overlay" onClick={e => e.stopPropagation()}>
+              <button
+                onClick={(e) => { e.stopPropagation(); onMove(item.id, 'up'); }}
+                className="btn-sort"
+                disabled={isFirst}
+                title="Yukarı Taşı"
+              >
+                ▲
+              </button>
+              <div className="drag-handle-indicator">
+                <span>⠿</span>
+                <span style={{ fontSize: '0.65rem', marginTop: '-2px' }}>Sürükle</span>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); onMove(item.id, 'down'); }}
+                className="btn-sort"
+                disabled={isLast}
+                title="Aşağı Taşı"
+              >
+                ▼
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="card-body">
+          <div>
+            <div className="card-title">{item.marka}</div>
+            {item.urun_adi && <div className="card-subtitle">{item.urun_adi}</div>}
           </div>
-        )}
-      </div>
 
-      <div className="card-body">
-        <div>
-          <div className="card-title">{item.marka}</div>
-          {item.urun_adi && <div className="card-subtitle">{item.urun_adi}</div>}
+          <div className="card-meta">
+            {item.kategori === 'market_markasi' && item.market_adi && (
+              <span className="card-meta-tag">🏪 {item.market_adi}</span>
+            )}
+            {item.kategori === 'yoresel' && item.yore && (
+              <span className="card-meta-tag">📍 {item.yore}</span>
+            )}
+          </div>
         </div>
-
-        <div className="card-meta">
-          {item.kategori === 'market_markasi' && item.market_adi && (
-            <span className="card-meta-tag">🏪 {item.market_adi}</span>
-          )}
-          {item.kategori === 'yoresel' && item.yore && (
-            <span className="card-meta-tag">📍 {item.yore}</span>
-          )}
-        </div>
-
-        {item.notlar && <p className="card-notes">{item.notlar}</p>}
       </div>
     </div>
   );
@@ -118,54 +119,55 @@ function AyranListRow({
   orderNumber: number;
 }) {
   return (
-    <div
-      className={`list-row${isSortingMode ? ' sorting-active' : ''}${item.eksi_mi ? ' eksi-row' : ''}`}
-      draggable={isSortingMode}
-      onClick={() => !isSortingMode && onEdit(item)}
-      onDragStart={() => onDragStart(item.id)}
-      onDragOver={(e) => onDragOver(e, item.id)}
-      onDrop={() => onDrop(item.id)}
-    >
-      {isSortingMode && (
-        <div className="list-sort-controls" onClick={e => e.stopPropagation()}>
-          <button
-            onClick={(e) => { e.stopPropagation(); onMove(item.id, 'up'); }}
-            className="btn-sort-sm"
-            disabled={isFirst}
-            title="Yukarı Taşı"
-          >
-            ▲
-          </button>
-          <span className="drag-handle-sm" title="Sürükle">⠿</span>
-          <button
-            onClick={(e) => { e.stopPropagation(); onMove(item.id, 'down'); }}
-            className="btn-sort-sm"
-            disabled={isLast}
-            title="Aşağı Taşı"
-          >
-            ▼
-          </button>
-        </div>
-      )}
+    <div className="list-row-with-order">
+      <span className="item-order-number">{orderNumber}</span>
+      <div
+        className={`list-row${isSortingMode ? ' sorting-active' : ''}`}
+        draggable={isSortingMode}
+        onClick={() => !isSortingMode && onEdit(item)}
+        onDragStart={() => onDragStart(item.id)}
+        onDragOver={(e) => onDragOver(e, item.id)}
+        onDrop={() => onDrop(item.id)}
+      >
+        {isSortingMode && (
+          <div className="list-sort-controls" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={(e) => { e.stopPropagation(); onMove(item.id, 'up'); }}
+              className="btn-sort-sm"
+              disabled={isFirst}
+              title="Yukarı Taşı"
+            >
+              ▲
+            </button>
+            <span className="drag-handle-sm" title="Sürükle">⠿</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); onMove(item.id, 'down'); }}
+              className="btn-sort-sm"
+              disabled={isLast}
+              title="Aşağı Taşı"
+            >
+              ▼
+            </button>
+          </div>
+        )}
 
-      <span className="list-order-number">{orderNumber}</span>
+        {item.fotograf_url
+          ? <img src={item.fotograf_url} className="list-img" alt={item.marka} />
+          : <div className="list-img-placeholder"><span className="list-initials">{getBrandInitials(item.marka)}</span></div>
+        }
 
-      {item.fotograf_url
-        ? <img src={item.fotograf_url} className="list-img" alt={item.marka} />
-        : <div className="list-img-placeholder"><span className="list-initials">{getBrandInitials(item.marka)}</span></div>
-      }
+        <div className="list-info">
+          <div className="list-title">
+            {item.marka}{item.urun_adi ? ` — ${item.urun_adi}` : ''}
+          </div>
+          <div className="list-meta">
+            {item.kategori === 'market_markasi' && item.market_adi && <span>🏪 {item.market_adi}</span>}
+            {item.kategori === 'yoresel' && item.yore && <span>📍 {item.yore}</span>}
+          </div>
+        </div>
 
-      <div className="list-info">
-        <div className="list-title">
-          {item.marka}{item.urun_adi ? ` — ${item.urun_adi}` : ''}
-        </div>
-        <div className="list-meta">
-          {item.kategori === 'market_markasi' && item.market_adi && <span>🏪 {item.market_adi}</span>}
-          {item.kategori === 'yoresel' && item.yore && <span>📍 {item.yore}</span>}
-        </div>
+        {item.eksi_mi && <span className="eksi-badge">🍋 Ekşi</span>}
       </div>
-
-      {item.notlar && <span className="list-notes">{item.notlar}</span>}
     </div>
   );
 }
@@ -176,10 +178,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [view, setView] = useState<ViewMode>('grid');
-  const [eksiFilter, setEksiFilter] = useState(false);
+  const [view, setView] = useState<ViewMode>('list');
+  const [activeCategory, setActiveCategory] = useState<Kategori>('yaygin_market');
+  const [eksiFilter, setEksiFilter] = useState<'hepsi' | 'eksi' | 'tatli'>('hepsi');
   const [isSortingMode, setIsSortingMode] = useState(false);
-  const [activeSection, setActiveSection] = useState<Kategori | 'eksi'>(kategoriler[0]);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<AyranEntry | null>(null);
@@ -199,66 +201,73 @@ export default function Home() {
     }
   };
 
-  const getSortingValue = (item: AyranEntry, section: Kategori | 'eksi') => {
-    return section === 'eksi' ? (item.sira_eksi ?? 0) : (item.sira ?? 0);
-  };
-
-  const getSectionItems = (source: AyranEntry[], section: Kategori | 'eksi') => {
-    const items = source.filter(item => section === 'eksi' ? item.eksi_mi : item.kategori === section);
+  const getSectionItems = (source: AyranEntry[], category: Kategori, filterVal: 'hepsi' | 'eksi' | 'tatli') => {
+    const items = source.filter(item => {
+      if (item.kategori !== category) return false;
+      if (filterVal === 'eksi') return item.eksi_mi;
+      if (filterVal === 'tatli') return !item.eksi_mi;
+      return true;
+    });
+    const isEksi = filterVal === 'eksi';
     return [...items].sort((a, b) => {
-      const valueDiff = getSortingValue(a, section) - getSortingValue(b, section);
+      const sortingValueA = isEksi ? (a.sira_eksi ?? 0) : (a.sira ?? 0);
+      const sortingValueB = isEksi ? (b.sira_eksi ?? 0) : (b.sira ?? 0);
+      const valueDiff = sortingValueA - sortingValueB;
       if (valueDiff !== 0) return valueDiff;
       return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
     });
   };
 
-  const applySectionOrder = (source: AyranEntry[], section: Kategori | 'eksi', orderedItems: AyranEntry[]) => {
+  const applySectionOrder = (source: AyranEntry[], category: Kategori, filterVal: 'hepsi' | 'eksi' | 'tatli', orderedItems: AyranEntry[]) => {
     const orderMap = new Map(orderedItems.map((item, index) => [item.id, index]));
+    const isEksi = filterVal === 'eksi';
     return source.map(item => {
-      if (section === 'eksi' ? !item.eksi_mi : item.kategori !== section) return item;
+      if (item.kategori !== category) return item;
+      if (filterVal === 'eksi' && !item.eksi_mi) return item;
+      if (filterVal === 'tatli' && item.eksi_mi) return item;
       const order = orderMap.get(item.id);
       if (order === undefined) return item;
       return {
         ...item,
-        ...(section === 'eksi' ? { sira_eksi: order } : { sira: order }),
+        ...(isEksi ? { sira_eksi: order } : { sira: order }),
       };
     });
   };
 
-  const reorderSectionItems = (section: Kategori | 'eksi', fromId: string, toId: string) => {
+  const reorderSectionItems = (fromId: string, toId: string) => {
     if (fromId === toId) return;
     setAyrans(prev => {
-      const sectionItems = getSectionItems(prev, section);
+      const sectionItems = getSectionItems(prev, activeCategory, eksiFilter);
       const fromIdx = sectionItems.findIndex(item => item.id === fromId);
       const toIdx = sectionItems.findIndex(item => item.id === toId);
       if (fromIdx === -1 || toIdx === -1) return prev;
       const moved = sectionItems.splice(fromIdx, 1)[0];
       sectionItems.splice(toIdx, 0, moved);
-      return applySectionOrder(prev, section, sectionItems);
+      return applySectionOrder(prev, activeCategory, eksiFilter, sectionItems);
     });
   };
 
-  const moveSectionItem = (section: Kategori | 'eksi', id: string, dir: 'up' | 'down') => {
+  const moveSectionItem = (id: string, dir: 'up' | 'down') => {
     setAyrans(prev => {
-      const sectionItems = getSectionItems(prev, section);
+      const sectionItems = getSectionItems(prev, activeCategory, eksiFilter);
       const idx = sectionItems.findIndex(item => item.id === id);
       if (idx < 0) return prev;
       const newIdx = dir === 'up' ? idx - 1 : idx + 1;
       if (newIdx < 0 || newIdx >= sectionItems.length) return prev;
       const reordered = [...sectionItems];
       [reordered[idx], reordered[newIdx]] = [reordered[newIdx], reordered[idx]];
-      return applySectionOrder(prev, section, reordered);
+      return applySectionOrder(prev, activeCategory, eksiFilter, reordered);
     });
   };
 
   const saveCurrentSorting = async () => {
-    const section = activeSection === 'eksi' ? 'eksi' : activeSection;
-    const sectionItems = getSectionItems(ayrans, section);
+    const isEksi = eksiFilter === 'eksi';
+    const sectionItems = getSectionItems(ayrans, activeCategory, eksiFilter);
     if (sectionItems.length === 0) return;
 
     const updates: Array<{ id: string; sira?: number; sira_eksi?: number }> = sectionItems.map((item, index) => ({
       id: item.id,
-      ...(section === 'eksi' ? { sira_eksi: index } : { sira: index }),
+      ...(isEksi ? { sira_eksi: index } : { sira: index }),
     }));
 
     setIsSaving(true);
@@ -269,7 +278,7 @@ export default function Home() {
         if (!match) return item;
         return {
           ...item,
-          ...(section === 'eksi' ? { sira_eksi: match.sira_eksi } : { sira: match.sira }),
+          ...(isEksi ? { sira_eksi: match.sira_eksi } : { sira: match.sira }),
         };
       }));
     } catch (e: unknown) {
@@ -323,17 +332,6 @@ export default function Home() {
     }
   };
 
-  // Filtre + sıralama
-  const filtered = ayrans.filter(a => {
-    return (!eksiFilter || a.eksi_mi);
-  });
-
-  const sorted = [...filtered].sort((a, b) => {
-    const valueDiff = (a.sira ?? 0) - (b.sira ?? 0);
-    if (valueDiff !== 0) return valueDiff;
-    return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-  });
-
   // İstatistikler
   const total = ayrans.length;
   const eksiCount = ayrans.filter(a => a.eksi_mi).length;
@@ -354,18 +352,8 @@ export default function Home() {
     yoresel: 'Yöresel Marka',
   };
 
-  const eksiItems = getSectionItems(filtered, 'eksi');
-  const sectionTabs: Array<{ key: Kategori | 'eksi'; label: string }> = [
-    ...kategoriler.map(kat => ({ key: kat, label: kategoriEtiketleri[kat] })),
-    { key: 'eksi', label: 'Ekşi Ayranlar' },
-  ];
-
-  const activeSectionItems = activeSection === 'eksi'
-    ? eksiItems
-    : getSectionItems(filtered, activeSection as Kategori);
-  const activeSectionLabel = activeSection === 'eksi'
-    ? 'Ekşi Ayranlar'
-    : kategoriEtiketleri[activeSection as Kategori];
+  const activeSectionItems = getSectionItems(ayrans, activeCategory, eksiFilter);
+  const activeSectionLabel = kategoriEtiketleri[activeCategory] + (eksiFilter === 'eksi' ? ' (Ekşi)' : (eksiFilter === 'tatli' ? ' (Ekşi Olmayan)' : ' (Tümü)'));
 
   return (
     <div className="app-container">
@@ -462,63 +450,65 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="toolbar">
-        <div className="view-toggle">
-          <button
-            className={`view-btn ${view === 'grid' ? 'active' : ''}`}
-            onClick={() => setView('grid')}
-            title="Kart görünümü"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-            <span className="view-btn-label">Kart</span>
-          </button>
-          <button
-            className={`view-btn ${view === 'list' ? 'active' : ''}`}
-            onClick={() => setView('list')}
-            title="Liste görünümü"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1.5" fill="currentColor"/><circle cx="3" cy="12" r="1.5" fill="currentColor"/><circle cx="3" cy="18" r="1.5" fill="currentColor"/></svg>
-            <span className="view-btn-label">Liste</span>
-          </button>
-        </div>
-      </div>
-
       {/* İçerik */}
       {loading ? (
         <div className="empty-state">
           <span className="empty-icon">⏳</span>
           <p>Veriler yükleniyor…</p>
         </div>
-      ) : sorted.length === 0 ? (
+      ) : ayrans.length === 0 ? (
         <div className="empty-state">
           <span className="empty-icon">🥛</span>
           <p style={{ fontWeight: 600 }}>Kayıt bulunamadı</p>
-          <p style={{ fontSize: '0.85rem' }}>
-            {total === 0 ? 'Henüz ayran eklenmedi.' : 'Filtreye uyan sonuç yok.'}
-          </p>
+          <p style={{ fontSize: '0.85rem' }}>Henüz ayran eklenmedi. Ekle butonuyla yeni bir ayran kaydı ekleyin.</p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            style={{ marginTop: '14px' }}
+            onClick={() => { setEditingItem(null); setInitialCategory('yaygin_market'); setIsFormOpen(true); }}
+          >
+            İlk Ayranı Ekle
+          </button>
         </div>
       ) : (
         <>
-          <div className="section-tabs" role="tablist" aria-label="Kategoriler">
-            {sectionTabs.map(tab => (
-              <button
-                key={tab.key}
-                type="button"
-                className={`section-tab${activeSection === tab.key ? ' active' : ''}`}
-                onClick={() => setActiveSection(tab.key)}
-                role="tab"
-                aria-selected={activeSection === tab.key}
-              >
-                {tab.label}
-              </button>
-            ))}
+          {/* Filtre Tablosu */}
+          <div className="filter-grid">
+            <div className="filter-row">
+              {kategoriler.map(kat => (
+                <button
+                  key={kat}
+                  type="button"
+                  className={`filter-cell${activeCategory === kat ? ' active' : ''}`}
+                  onClick={() => { setActiveCategory(kat); setIsSortingMode(false); }}
+                  role="tab"
+                  aria-selected={activeCategory === kat}
+                >
+                  {kategoriEtiketleri[kat]}
+                </button>
+              ))}
+              <span className="filter-count">{activeSectionItems.length}</span>
+            </div>
+            <div className="filter-row">
+              {([['hepsi', 'Tümü'], ['tatli', 'Ekşi Olmayan'], ['eksi', 'Ekşi Ayran']] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  type="button"
+                  className={`filter-cell${eksiFilter === val ? ' active' : ''}`}
+                  onClick={() => { setEksiFilter(val); setIsSortingMode(false); }}
+                  role="tab"
+                  aria-selected={eksiFilter === val}
+                >
+                  {label}
+                </button>
+              ))}
+              <span className="filter-count-spacer" />
+            </div>
           </div>
 
           <section className="cat-section">
             <div className="cat-section-header">
               <div className="section-controls-row">
-                <span className="cat-count">{activeSectionItems.length}</span>
                 <div className="section-controls-group">
                   <button
                     className={`btn-sort-toggle${isSortingMode ? ' active' : ''}`}
@@ -537,14 +527,6 @@ export default function Home() {
                   </button>
                   <div className="view-toggle compact-view-toggle">
                     <button
-                      className={`view-btn ${view === 'grid' ? 'active' : ''}`}
-                      onClick={() => setView('grid')}
-                      title="Kart görünümü"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                      <span className="view-btn-label">Kart</span>
-                    </button>
-                    <button
                       className={`view-btn ${view === 'list' ? 'active' : ''}`}
                       onClick={() => setView('list')}
                       title="Liste görünümü"
@@ -552,17 +534,27 @@ export default function Home() {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1.5" fill="currentColor"/><circle cx="3" cy="12" r="1.5" fill="currentColor"/><circle cx="3" cy="18" r="1.5" fill="currentColor"/></svg>
                       <span className="view-btn-label">Liste</span>
                     </button>
-                  </div>
-                  {activeSection !== 'eksi' && (
                     <button
-                      type="button"
-                      className="cat-add-btn"
-                      onClick={() => { setEditingItem(null); setInitialCategory(activeSection as Kategori); setIsFormOpen(true); }}
-                      title={`${activeSectionLabel} için yeni ayran ekle`}
+                      className={`view-btn ${view === 'grid' ? 'active' : ''}`}
+                      onClick={() => setView('grid')}
+                      title="Kart görünümü"
                     >
-                      Ekle
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                      <span className="view-btn-label">Kart</span>
                     </button>
-                  )}
+                  </div>
+                  <button
+                    type="button"
+                    className="cat-add-btn"
+                    onClick={() => {
+                      setEditingItem(null);
+                      setInitialCategory(activeCategory);
+                      setIsFormOpen(true);
+                    }}
+                    title={`${activeSectionLabel} için yeni ayran ekle`}
+                  >
+                    Ekle
+                  </button>
                 </div>
               </div>
             </div>
@@ -578,8 +570,8 @@ export default function Home() {
                     isSortingMode={isSortingMode}
                     onDragStart={id => setDragId(id)}
                     onDragOver={e => e.preventDefault()}
-                    onDrop={toId => { if (dragId) reorderSectionItems(activeSection === 'eksi' ? 'eksi' : item.kategori, dragId, toId); setDragId(null); }}
-                    onMove={(id, dir) => moveSectionItem(activeSection === 'eksi' ? 'eksi' : item.kategori, id, dir)}
+                    onDrop={toId => { if (dragId) reorderSectionItems(dragId, toId); setDragId(null); }}
+                    onMove={(id, dir) => moveSectionItem(id, dir)}
                     isFirst={idx === 0}
                     isLast={idx === activeSectionItems.length - 1}
                   />
@@ -596,8 +588,8 @@ export default function Home() {
                     isSortingMode={isSortingMode}
                     onDragStart={id => setDragId(id)}
                     onDragOver={e => e.preventDefault()}
-                    onDrop={toId => { if (dragId) reorderSectionItems(activeSection === 'eksi' ? 'eksi' : item.kategori, dragId, toId); setDragId(null); }}
-                    onMove={(id, dir) => moveSectionItem(activeSection === 'eksi' ? 'eksi' : item.kategori, id, dir)}
+                    onDrop={toId => { if (dragId) reorderSectionItems(dragId, toId); setDragId(null); }}
+                    onMove={(id, dir) => moveSectionItem(id, dir)}
                     isFirst={idx === 0}
                     isLast={idx === activeSectionItems.length - 1}
                   />

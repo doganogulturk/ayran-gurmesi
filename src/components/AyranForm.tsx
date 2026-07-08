@@ -23,7 +23,6 @@ export default function AyranForm({ isOpen, editingItem, initialCategory, onClos
   const [eksiMi, setEksiMi] = useState(editingItem?.eksi_mi ?? false);
   const [marketAdi, setMarketAdi] = useState(editingItem?.market_adi ?? '');
   const [yore, setYore] = useState(editingItem?.yore ?? '');
-  const [notlar] = useState(editingItem?.notlar ?? '');
   const [fotografUrl, setFotografUrl] = useState(editingItem?.fotograf_url ?? '');
 
   if (!isOpen) return null;
@@ -41,7 +40,6 @@ export default function AyranForm({ isOpen, editingItem, initialCategory, onClos
       eksi_mi: eksiMi,
       market_adi: kategori === 'market_markasi' ? (marketAdi.trim() || null) : null,
       yore: kategori === 'yoresel' ? (yore.trim() || null) : null,
-      notlar: notlar.trim() || null,
       fotograf_url: fotografUrl.trim() || null,
     });
   };

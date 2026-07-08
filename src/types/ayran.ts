@@ -9,7 +9,6 @@ export interface AyranEntry {
   eksi_mi: boolean;
   market_adi?: string | null;  // Yalnızca market_markasi kategorisi için
   yore?: string | null;         // Yalnızca yoresel kategorisi için
-  notlar?: string | null;
   icme_tarihi?: string | null;
   fotograf_url?: string | null;
   sira?: number;
