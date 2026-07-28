@@ -12,13 +12,12 @@ export interface AyranEntry {
   icme_tarihi?: string | null;
   fotograf_url?: string | null;
   sira?: number;
-  sira_eksi?: number;
 }
 
 export const kategoriler: Kategori[] = ['yaygin_market', 'market_markasi', 'yoresel'];
 
 export const kategoriEtiketleri: Record<Kategori, string> = {
-  yaygin_market: 'Yaygın Market',
+  yaygin_market: 'Yaygın',
   market_markasi: 'Market Markası',
   yoresel: 'Yöresel',
 };
