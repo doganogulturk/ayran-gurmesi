@@ -1,36 +1,103 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ayran Gurmesi
 
-## Getting Started
+Ayran Gurmesi, içtiğiniz ayranları kaydedebileceğiniz, kategori ve tat profiline göre filtreleyebileceğiniz, sıralayabileceğiniz ve Supabase Storage üzerinden fotoğraf ekleyebileceğiniz bir Next.js uygulamasıdır.
 
-First, run the development server:
+## Özellikler
+
+- Ayran kaydı oluşturma, düzenleme ve silme
+- Kategori bazlı filtreleme: Yaygın, Market Markası, Yöresel
+- Ekşi / ekşi olmayan ayranlara göre filtreleme
+- Sürükle-bırak veya oklarla liste sıralama
+- Supabase veritabanı ile veri saklama
+- Supabase Storage ile fotoğraf yükleme
+- Mobil uyumlu ve modern arayüz
+
+## Teknolojiler
+
+- Next.js 16.2.7
+- React 19.2.4
+- TypeScript
+- Supabase
+- ESLint
+
+## Kurulum
+
+1. Depoyu klonlayın veya mevcut klasöre geçin:
+
+```bash
+git clone <repo-url>
+cd ayran-gurmesi
+```
+
+2. Bağımlılıkları yükleyin:
+
+```bash
+npm install
+```
+
+## Ortam Değişkenleri
+
+Uygulamayı çalıştırmadan önce Supabase bağlantı bilgilerini ayarlayın. Proje kökünde `.env.local` oluşturun ve aşağıdaki değerleri ekleyin:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+> Supabase URL ve anon key bilgilerini Supabase projenizden alın.
+
+## Çalıştırma
+
+Geliştirme sunucusunu başlatmak için:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Tarayıcıda `http://localhost:3000` adresini açın.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Proje Yapısı
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `src/app/page.tsx`: Ana sayfa, listeleme ve filtreleme mantığı
+- `src/components/AyranForm.tsx`: Ayran ekleme / düzenleme modal formu
+- `src/lib/ayranlar.ts`: Supabase CRUD ve sıralama işlemleri
+- `src/lib/supabase.ts`: Supabase istemcisi yapılandırması
+- `src/types/ayran.ts`: Ayran veri tipleri ve kategori tanımları
+- `src/app/globals.css`: Uygulama stil dosyası
 
-## Learn More
+## Supabase Yapılandırması
 
-To learn more about Next.js, take a look at the following resources:
+Bu projede Supabase veritabanı ve Storage kullanılır.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Veritabanında `ay_ayranlar` adlı tablo olmalıdır.
+- Storage içinde `ayran` adlı bir bucket oluşturulmalı ve kamuya açık erişime izin verilmelidir.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Önerilen tablo alanları
 
-## Deploy on Vercel
+- `id` (uuid veya text)
+- `created_at` (timestamp)
+- `marka` (text)
+- `urun_adi` (text)
+- `kategori` (text)
+- `eksi_mi` (boolean)
+- `market_adi` (text)
+- `yore` (text)
+- `fotograf_url` (text)
+- `sira` (integer)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Üretim
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Üretim build'i almak ve uygulamayı çalıştırmak için:
+
+```bash
+npm run build
+npm run start
+```
+
+## Notlar
+
+- `.env.local` dosyasını `.gitignore` içinde tutun.
+- `src/lib/supabase.ts` doğrudan ortam değişkenlerine güveniyor; eksik ise uygulama çalışmaz.
+- `updateAyranlarSira` fonksiyonu sıralama değişikliklerini Supabase’e kaydeder.
+
+Eğer istersen, Supabase tablo şemasını ve deploy adımlarını README içinde daha ayrıntılı hale getirebilirim.

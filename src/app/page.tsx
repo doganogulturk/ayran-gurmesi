@@ -9,15 +9,18 @@ import AyranForm from '../components/AyranForm';
 type DashboardTab = 'hepsi' | 'eksi' | 'tatli';
 
 const KAT_COLOR: Record<Kategori, string> = {
-  yaygin_market: 'var(--kat-yaygin)',
-  market_markasi: 'var(--kat-market)',
-  yoresel: 'var(--kat-yoresel)',
+  yaygin_market: '#3B82F6',
+  market_markasi: '#F59E0B',
+  yoresel: '#10B981',
 };
 
-const kategoriChartLabels: Record<Kategori, string> = {
-  yaygin_market: 'Yaygın',
-  market_markasi: 'Market Markası',
-  yoresel: 'Yöresel',
+const getAvatarBg = (marka: string) => {
+  let hash = 0;
+  for (let i = 0; i < marka.length; i++) {
+    hash = marka.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = Math.abs(hash) % 360;
+  return `hsl(${h}, 35%, 32%)`;
 };
 
 const getBrandInitials = (marka: string | null | undefined) => {
@@ -42,6 +45,8 @@ function AyranListRow({
   isLast: boolean;
   orderNumber: number;
 }) {
+  const avatarBg = getAvatarBg(item.marka || '');
+
   return (
     <div className="list-row-with-order">
       <span className="item-order-number">{orderNumber}</span>
@@ -76,18 +81,24 @@ function AyranListRow({
         )}
 
         {item.fotograf_url
-          ? <img src={item.fotograf_url} className="list-img" alt={item.marka} />
-          : <div className="list-img-placeholder"><span className="list-initials">{getBrandInitials(item.marka)}</span></div>
+          ? <img src={item.fotograf_url} className="list-img" alt={item.marka ?? ''} />
+          : (
+            <div className="list-img-placeholder" style={{ background: avatarBg }}>
+              <span className="list-initials">{getBrandInitials(item.marka)}</span>
+            </div>
+          )
         }
 
         <div className="list-info">
           <div className="list-title">
             {item.marka}{item.urun_adi ? ` — ${item.urun_adi}` : ''}
           </div>
-          <div className="list-meta">
-            {item.kategori === 'market_markasi' && item.market_adi && <span>🏪 {item.market_adi}</span>}
-            {item.kategori === 'yoresel' && item.yore && <span>📍 {item.yore}</span>}
-          </div>
+          {((item.kategori === 'market_markasi' && item.market_adi) || (item.kategori === 'yoresel' && item.yore)) && (
+            <div className="list-meta">
+              {item.kategori === 'market_markasi' && item.market_adi && <span>🏪 {item.market_adi}</span>}
+              {item.kategori === 'yoresel' && item.yore && <span>📍 {item.yore}</span>}
+            </div>
+          )}
         </div>
 
         {item.eksi_mi && <span className="eksi-badge">Ekşi</span>}
@@ -163,7 +174,7 @@ export default function Home() {
     setIsSortingMode(false);
   };
 
-  /* ── Reordering (global sira) ──────────────────────── */
+  /* ── Reordering ──────────────────────────────────────── */
   const reorderItems = (fromId: string, toId: string) => {
     if (fromId === toId) return;
     setAyrans(prev => {
@@ -219,10 +230,6 @@ export default function Home() {
   };
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'light');
-  }, []);
-
-  useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, []);
@@ -261,7 +268,7 @@ export default function Home() {
     }
   };
 
-  // İstatistikler & Dağılım Grafikleri
+  // İstatistikler
   const total = ayrans.length;
   const eksiCount = ayrans.filter(a => a.eksi_mi).length;
   const tatliCount = total - eksiCount;
@@ -284,49 +291,27 @@ export default function Home() {
   const currentDashboardCount = dashboardTab === 'hepsi' ? total : (dashboardTab === 'eksi' ? eksiCount : tatliCount);
   const currentKatCounts = dashboardTab === 'hepsi' ? katCounts : (dashboardTab === 'eksi' ? eksiKatCounts : tatliKatCounts);
 
-  // Formdaki initialCategory: tek kategori seçiliyse onu kullan
+  // Maximum category count in current view to calculate relative bar height
+  const maxCategoryCount = Math.max(...Object.values(currentKatCounts), 1);
+
   const formInitialCategory: Kategori = activeCategories.size === 1
     ? [...activeCategories][0]
     : 'yaygin_market';
 
   return (
     <div className="app-container">
-      {/* Header (Logo + Ekle & Sırala Eylemleri) */}
+      {/* Header with Total Count Badge (Task 3) and no top sort/add buttons (Task 1) */}
       <header className="app-header">
         <div className="logo-area">
+          <span style={{ fontSize: '2.2rem', lineHeight: 1 }}>🥛</span>
           <div className="logo-text">
             <h1>Ayran Gurmesi</h1>
-            <p>Kişisel Ayran Derecelendirme Defteri</p>
+            <p>Kişisel Derecelendirme</p>
           </div>
         </div>
 
-        <div className="header-actions">
-          <button
-            className={`toolbar-btn${isSortingMode ? ' active' : ''}`}
-            onClick={async () => {
-              if (isSortingMode) {
-                await saveCurrentSorting();
-                setIsSortingMode(false);
-              } else {
-                setIsSortingMode(true);
-              }
-            }}
-            title={hasActiveFilters ? 'Sıralama için tüm filtreleri kaldırın' : (isSortingMode ? 'Sıralamayı Kaydet' : 'Sırala')}
-            disabled={isSaving || (hasActiveFilters && !isSortingMode)}
-          >
-            {isSortingMode ? '✓ Kaydet' : '↕ Sırala'}
-          </button>
-          <button
-            type="button"
-            className="cat-add-btn"
-            onClick={() => {
-              setEditingItem(null);
-              setIsFormOpen(true);
-            }}
-            title="Yeni ayran ekle"
-          >
-            + Ekle
-          </button>
+        <div className="header-count-badge" title="Ayran Sayısı">
+          {currentDashboardCount}
         </div>
       </header>
 
@@ -338,85 +323,74 @@ export default function Home() {
         </div>
       )}
 
-      {/* Interaktif Dashboard KPI Dağılım Grafiği (Filtreleyen Sekmeli) */}
+      {/* Dashboard Card with 3 Column Bars scaled by count (Task 2) */}
       <div className="dashboard">
         <div className="kpi-card single-kpi-card">
-          <div className="kpi-card-header">
-            <div className="kpi-tabs" role="tablist" aria-label="Grafik Sekmeleri">
-              <button
-                type="button"
-                className={`kpi-tab${dashboardTab === 'hepsi' ? ' active' : ''}`}
-                onClick={() => selectDashboardTab('hepsi')}
-                role="tab"
-                aria-selected={dashboardTab === 'hepsi'}
-              >
-                Tüm Kayıtlar
-              </button>
-              <button
-                type="button"
-                className={`kpi-tab${dashboardTab === 'eksi' ? ' active' : ''}`}
-                onClick={() => selectDashboardTab('eksi')}
-                role="tab"
-                aria-selected={dashboardTab === 'eksi'}
-              >
-                Ekşiler
-              </button>
-              <button
-                type="button"
-                className={`kpi-tab${dashboardTab === 'tatli' ? ' active' : ''}`}
-                onClick={() => selectDashboardTab('tatli')}
-                role="tab"
-                aria-selected={dashboardTab === 'tatli'}
-              >
-                Ekşi Olmayanlar
-              </button>
-            </div>
-          </div>
+          <div className="kpi-columns-container">
+            {kategoriler.map(kat => {
+              const count = currentKatCounts[kat];
+              // Calculate percentage height based on category count relative to max category count or total
+              const heightPct = currentDashboardCount > 0 ? (count / maxCategoryCount) * 100 : 0;
+              const isSelected = activeCategories.has(kat);
 
-          <div className="kpi-bar-stack">
-            <div className="kpi-bar-row">
-              <span className="kpi-bar-total" title="Toplam Kayıt">{currentDashboardCount}</span>
-              <div className="kpi-bar-track">
-                {kategoriler.map(kat => {
-                  const count = currentKatCounts[kat];
-                  const pct = currentDashboardCount ? (count / currentDashboardCount) * 100 : 0;
-                  return (
+              return (
+                <div
+                  key={kat}
+                  className={`kpi-col-item${isSelected ? ' active' : ''}`}
+                  onClick={() => toggleCategory(kat)}
+                  title={`${kategoriEtiketleri[kat]}: ${count}`}
+                >
+                  <div className="kpi-col-bar-bg">
                     <div
-                      key={kat}
-                      className="kpi-bar-segment"
-                      style={{ width: `${pct}%`, background: KAT_COLOR[kat] }}
-                      title={`${kategoriChartLabels[kat]}: ${count}`}
+                      className="kpi-col-bar-fill"
+                      style={{
+                        height: `${count > 0 ? Math.max(heightPct, 15) : 0}%`,
+                        background: KAT_COLOR[kat],
+                      }}
                     >
-                      {count > 0 && <span className="kpi-bar-segment-label">{count}</span>}
+                      {count > 0 && <span className="kpi-col-count">{count}</span>}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Interaktif Kategori Legend Butonları */}
-            <div className="kpi-bar-legends">
-              {kategoriler.map(kat => {
-                const isSelected = activeCategories.has(kat);
-                return (
-                  <button
-                    key={kat}
-                    type="button"
-                    className={`kpi-legend-btn${isSelected ? ' active' : ''}`}
-                    onClick={() => toggleCategory(kat)}
-                    title={`${kategoriChartLabels[kat]} kategorisini filtrele`}
-                  >
+                  </div>
+                  {/* Task 2: Show Category Name instead of color hex */}
+                  <div className="kpi-col-label">
                     <span className="kpi-legend-dot" style={{ background: KAT_COLOR[kat] }} />
-                    <span>{kategoriChartLabels[kat]}</span>
-                  </button>
-                );
-              })}
-            </div>
+                    <span className="kpi-col-name">{kategoriEtiketleri[kat]}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* İçerik */}
+      {/* Filter Nav Tabs */}
+      <div className="filter-tabs-row">
+        <button
+          type="button"
+          className={`filter-tab-btn${dashboardTab === 'hepsi' ? ' active' : ''}`}
+          onClick={() => selectDashboardTab('hepsi')}
+        >
+          Tüm Kayıtlar
+        </button>
+        <span className="filter-tab-sep">|</span>
+        <button
+          type="button"
+          className={`filter-tab-btn${dashboardTab === 'eksi' ? ' active' : ''}`}
+          onClick={() => selectDashboardTab('eksi')}
+        >
+          Ekşiler
+        </button>
+        <span className="filter-tab-sep">|</span>
+        <button
+          type="button"
+          className={`filter-tab-btn${dashboardTab === 'tatli' ? ' active' : ''}`}
+          onClick={() => selectDashboardTab('tatli')}
+        >
+          Ekşi Olmayanlar
+        </button>
+      </div>
+
+      {/* Content List */}
       {loading ? (
         <div className="empty-state">
           <span className="empty-icon">⏳</span>
@@ -425,12 +399,12 @@ export default function Home() {
       ) : ayrans.length === 0 ? (
         <div className="empty-state">
           <span className="empty-icon">🥛</span>
-          <p style={{ fontWeight: 600 }}>Kayıt bulunamadı</p>
-          <p style={{ fontSize: '0.85rem' }}>Henüz ayran eklenmedi. Ekle butonuyla yeni bir ayran kaydı ekleyin.</p>
+          <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>Henüz kayıt yok</p>
+          <p style={{ fontSize: '0.84rem' }}>İlk ayranını eklemek için + butonuna tıkla.</p>
           <button
             type="button"
             className="btn btn-primary"
-            style={{ marginTop: '14px' }}
+            style={{ marginTop: '8px' }}
             onClick={() => { setEditingItem(null); setIsFormOpen(true); }}
           >
             İlk Ayranı Ekle
@@ -438,7 +412,6 @@ export default function Home() {
         </div>
       ) : (
         <>
-          {/* Sadece Liste Görünümü */}
           <div className="list-view">
             {filteredItems.map((item, idx) => (
               <AyranListRow
@@ -467,7 +440,41 @@ export default function Home() {
         </>
       )}
 
-      {/* Sıralama Kaydediliyor Toast */}
+      {/* Task 1: Floating Action Group at bottom right (Sort + Add) */}
+      <div className="fab-group">
+        <button
+          type="button"
+          className={`fab-btn fab-sort${isSortingMode ? ' active' : ''}`}
+          onClick={async () => {
+            if (isSortingMode) {
+              await saveCurrentSorting();
+              setIsSortingMode(false);
+            } else {
+              setDashboardTab('hepsi');
+              setActiveCategories(new Set());
+              setIsSortingMode(true);
+            }
+          }}
+          title={isSortingMode ? 'Sıralamayı Kaydet' : 'Sırala'}
+          disabled={isSaving}
+        >
+          {isSortingMode ? '✓' : '↕'}
+        </button>
+
+        <button
+          type="button"
+          className="fab-btn fab-add"
+          onClick={() => {
+            setEditingItem(null);
+            setIsFormOpen(true);
+          }}
+          title="Yeni Ayran Ekle"
+        >
+          +
+        </button>
+      </div>
+
+      {/* Saving Toast */}
       {isSaving && (
         <div className="saving-toast">
           <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</span>
