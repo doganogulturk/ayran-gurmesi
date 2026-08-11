@@ -20,7 +20,7 @@ const getAvatarBg = (marka: string) => {
     hash = marka.charCodeAt(i) + ((hash << 5) - hash);
   }
   const h = Math.abs(hash) % 360;
-  return `hsl(${h}, 35%, 32%)`;
+  return `hsl(${h}, 55%, 45%)`;
 };
 
 const getBrandInitials = (marka: string | null | undefined) => {
@@ -47,9 +47,20 @@ function AyranListRow({
 }) {
   const avatarBg = getAvatarBg(item.marka || '');
 
+  // Rank badge styling
+  const getRankBadgeClass = (num: number) => {
+    if (num === 1) return 'rank-badge rank-gold';
+    if (num === 2) return 'rank-badge rank-silver';
+    if (num === 3) return 'rank-badge rank-bronze';
+    return 'rank-badge rank-normal';
+  };
+
   return (
     <div className="list-row-with-order">
-      <span className="item-order-number">{orderNumber}</span>
+      <div className={getRankBadgeClass(orderNumber)}>
+        {orderNumber === 1 ? '🥇 1' : orderNumber === 2 ? '🥈 2' : orderNumber === 3 ? '🥉 3' : orderNumber}
+      </div>
+
       <div
         className={`list-row${isSortingMode ? ' sorting-active' : ''}`}
         draggable={isSortingMode}
@@ -151,8 +162,6 @@ export default function Home() {
     });
   };
 
-  const hasActiveFilters = dashboardTab !== 'hepsi' || activeCategories.size > 0;
-
   const filteredItems = useMemo(
     () => getFilteredItems(ayrans, dashboardTab, activeCategories),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -234,7 +243,7 @@ export default function Home() {
     void load();
   }, []);
 
-  const handleSave = async (entry: AyranEntry) => {
+  const handleSave = async (entry: AyranEntry, targetIndex?: number) => {
     try {
       const { id, ...fields } = entry;
       if (editingItem) {
@@ -242,7 +251,19 @@ export default function Home() {
         setAyrans(prev => prev.map(a => a.id === id ? updated : a));
       } else {
         const created = await createAyran(fields);
-        setAyrans(prev => [created, ...prev]);
+        setAyrans(prev => {
+          let updatedList = [...prev];
+          if (targetIndex !== undefined && targetIndex >= 0) {
+            updatedList.splice(targetIndex, 0, created);
+          } else {
+            updatedList.unshift(created);
+          }
+          // Recalculate sira for all
+          const reordered = updatedList.map((item, index) => ({ ...item, sira: index }));
+          // Persist sira updates to database
+          void updateAyranlarSira(reordered.map(item => ({ id: item.id, sira: item.sira ?? 0 })));
+          return reordered;
+        });
       }
       setIsFormOpen(false);
       setEditingItem(null);
@@ -291,26 +312,29 @@ export default function Home() {
   const currentDashboardCount = dashboardTab === 'hepsi' ? total : (dashboardTab === 'eksi' ? eksiCount : tatliCount);
   const currentKatCounts = dashboardTab === 'hepsi' ? katCounts : (dashboardTab === 'eksi' ? eksiKatCounts : tatliKatCounts);
 
-  // Maximum category count in current view to calculate relative bar height
   const maxCategoryCount = Math.max(...Object.values(currentKatCounts), 1);
 
   const formInitialCategory: Kategori = activeCategories.size === 1
     ? [...activeCategories][0]
     : 'yaygin_market';
 
+  const sortedAllAyrans = useMemo(() => {
+    return [...ayrans].sort((a, b) => (a.sira ?? 9999) - (b.sira ?? 9999));
+  }, [ayrans]);
+
   return (
     <div className="app-container">
-      {/* Header with Total Count Badge (Task 3) and no top sort/add buttons (Task 1) */}
+      {/* Header */}
       <header className="app-header">
         <div className="logo-area">
           <span style={{ fontSize: '2.2rem', lineHeight: 1 }}>🥛</span>
           <div className="logo-text">
             <h1>Ayran Gurmesi</h1>
-            <p>Kişisel Derecelendirme</p>
+            <p>Kişisel Derecelendirme & İnceleme</p>
           </div>
         </div>
 
-        <div className="header-count-badge" title="Ayran Sayısı">
+        <div className="header-count-badge" title="Toplam Ayran Sayısı">
           {currentDashboardCount}
         </div>
       </header>
@@ -323,20 +347,20 @@ export default function Home() {
         </div>
       )}
 
-      {/* Dashboard Card with 3 Column Bars scaled by count (Task 2) */}
+      {/* Dashboard Card with 3 Column Bars */}
       <div className="dashboard">
         <div className="kpi-card single-kpi-card">
           <div className="kpi-columns-container">
             {kategoriler.map(kat => {
               const count = currentKatCounts[kat];
-              // Calculate percentage height based on category count relative to max category count or total
               const heightPct = currentDashboardCount > 0 ? (count / maxCategoryCount) * 100 : 0;
               const isSelected = activeCategories.has(kat);
+              const isAnySelected = activeCategories.size > 0;
 
               return (
                 <div
                   key={kat}
-                  className={`kpi-col-item${isSelected ? ' active' : ''}`}
+                  className={`kpi-col-item ${kat} ${isSelected ? 'active-selected' : ''} ${isAnySelected && !isSelected ? 'dimmed-unselected' : ''}`}
                   onClick={() => toggleCategory(kat)}
                   title={`${kategoriEtiketleri[kat]}: ${count}`}
                 >
@@ -344,18 +368,24 @@ export default function Home() {
                     <div
                       className="kpi-col-bar-fill"
                       style={{
-                        height: `${count > 0 ? Math.max(heightPct, 15) : 0}%`,
+                        height: `${count > 0 ? Math.max(heightPct, 18) : 0}%`,
                         background: KAT_COLOR[kat],
                       }}
                     >
                       {count > 0 && <span className="kpi-col-count">{count}</span>}
                     </div>
                   </div>
-                  {/* Task 2: Show Category Name instead of color hex */}
+
                   <div className="kpi-col-label">
                     <span className="kpi-legend-dot" style={{ background: KAT_COLOR[kat] }} />
                     <span className="kpi-col-name">{kategoriEtiketleri[kat]}</span>
                   </div>
+
+                  {isSelected && (
+                    <span className="active-check-tag" style={{ background: KAT_COLOR[kat] }}>
+                      ✓ Seçili
+                    </span>
+                  )}
                 </div>
               );
             })}
@@ -394,17 +424,17 @@ export default function Home() {
       {loading ? (
         <div className="empty-state">
           <span className="empty-icon">⏳</span>
-          <p>Veriler yükleniyor…</p>
+          <p>Ayran gurmesi verileri yükleniyor…</p>
         </div>
       ) : ayrans.length === 0 ? (
         <div className="empty-state">
           <span className="empty-icon">🥛</span>
-          <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>Henüz kayıt yok</p>
-          <p style={{ fontSize: '0.84rem' }}>İlk ayranını eklemek için + butonuna tıkla.</p>
+          <p style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>Henüz ayran kaydı yok</p>
+          <p style={{ fontSize: '0.86rem' }}>İlk ayranınızı derecelendirmek için aşağıdaki + butonuna basın.</p>
           <button
             type="button"
             className="btn btn-primary"
-            style={{ marginTop: '8px' }}
+            style={{ marginTop: '12px' }}
             onClick={() => { setEditingItem(null); setIsFormOpen(true); }}
           >
             İlk Ayranı Ekle
@@ -434,13 +464,13 @@ export default function Home() {
             <div className="empty-state">
               <span className="empty-icon">🔍</span>
               <p style={{ fontWeight: 600 }}>Sonuç bulunamadı</p>
-              <p style={{ fontSize: '0.85rem' }}>Seçili filtrelere uyan ayran yok.</p>
+              <p style={{ fontSize: '0.85rem' }}>Seçtiğiniz filtrelere uyan ayran bulunmuyor.</p>
             </div>
           )}
         </>
       )}
 
-      {/* Task 1: Floating Action Group at bottom right (Sort + Add) */}
+      {/* Floating Action Buttons */}
       <div className="fab-group">
         <button
           type="button"
@@ -455,7 +485,7 @@ export default function Home() {
               setIsSortingMode(true);
             }
           }}
-          title={isSortingMode ? 'Sıralamayı Kaydet' : 'Sırala'}
+          title={isSortingMode ? 'Sıralamayı Kaydet' : 'Sıralamayı Değiştir'}
           disabled={isSaving}
         >
           {isSortingMode ? '✓' : '↕'}
@@ -487,6 +517,7 @@ export default function Home() {
         isOpen={isFormOpen}
         editingItem={editingItem}
         initialCategory={formInitialCategory}
+        existingAyrans={sortedAllAyrans}
         onClose={() => { setIsFormOpen(false); setEditingItem(null); }}
         onSave={handleSave}
         onDelete={handleDelete}
@@ -494,3 +525,4 @@ export default function Home() {
     </div>
   );
 }
+
