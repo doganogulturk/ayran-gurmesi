@@ -42,18 +42,22 @@ export async function updateAyran(
   return data as AyranEntry;
 }
 
-export async function deleteAyran(id: string): Promise<void> {
+export async function deleteAyran(id: string, fotografUrl?: string | null): Promise<void> {
   const { error } = await supabase.from(TABLE).delete().eq('id', id);
   if (error) throw error;
+  await deleteFotograf(fotografUrl);
 }
 
 export async function updateAyranlarSira(
   updates: { id: string; sira: number }[]
 ): Promise<void> {
-  const promises = updates.map(u =>
-    supabase.from(TABLE).update({ sira: u.sira }).eq('id', u.id)
+  if (updates.length === 0) return;
+  // Not a single upsert: Postgres validates NOT NULL columns (e.g. marka) against the
+  // INSERT values even when ON CONFLICT redirects to an UPDATE, so a bare {id, sira}
+  // payload fails with 23502. Per-row UPDATE avoids that since it never touches other columns.
+  const results = await Promise.all(
+    updates.map(u => supabase.from(TABLE).update({ sira: u.sira }).eq('id', u.id))
   );
-  const results = await Promise.all(promises);
   for (const r of results) {
     if (r.error) throw r.error;
   }
@@ -74,4 +78,19 @@ export async function uploadFotograf(file: File): Promise<string> {
     .getPublicUrl(fileName);
 
   return data.publicUrl;
+}
+
+function extractFotografPath(url: string): string | null {
+  const marker = '/ayran/';
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  return url.slice(idx + marker.length);
+}
+
+export async function deleteFotograf(url?: string | null): Promise<void> {
+  if (!url) return;
+  const path = extractFotografPath(url);
+  if (!path) return;
+  const { error } = await supabase.storage.from('ayran').remove([path]);
+  if (error) console.warn('Fotoğraf silinemedi:', error.message);
 }

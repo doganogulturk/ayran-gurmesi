@@ -1,13 +1,15 @@
 'use client';
+/* eslint-disable @next/next/no-img-element */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AyranEntry, Kategori, kategoriler, kategoriEtiketleri } from '../types/ayran';
-import { uploadFotograf } from '../lib/ayranlar';
+import { uploadFotograf, deleteFotograf } from '../lib/ayranlar';
 
 interface AyranFormProps {
   isOpen: boolean;
   editingItem: AyranEntry | null;
   initialCategory?: Kategori;
+  /** Sıralamadaki mevcut kayıtlar (sıralı) — "şunun altına" seçimi için. */
   existingAyrans?: AyranEntry[];
   onClose: () => void;
   onSave: (entry: AyranEntry, targetIndex?: number) => void;
@@ -39,10 +41,27 @@ export default function AyranForm({
   const [marketAdi, setMarketAdi] = useState(editingItem?.market_adi ?? '');
   const [yore, setYore] = useState(editingItem?.yore ?? '');
   const [fotografUrl, setFotografUrl] = useState(editingItem?.fotograf_url ?? '');
-
-  // Sıralama konumu seçimi (yalnızca yeni kayıtlar için)
   const [positionMode, setPositionMode] = useState<'top' | 'bottom' | 'after'>('top');
   const [afterItemId, setAfterItemId] = useState<string>(existingAyrans[0]?.id ?? '');
+
+  const originalFotografUrl = useRef(editingItem?.fotograf_url ?? '');
+
+  const handleClose = () => {
+    if (fotografUrl && fotografUrl !== originalFotografUrl.current) {
+      void deleteFotograf(fotografUrl);
+    }
+    onClose();
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, fotografUrl]);
 
   if (!isOpen) return null;
 
@@ -50,16 +69,15 @@ export default function AyranForm({
     e.preventDefault();
     if (!marka.trim()) return;
 
-    let targetIndex: number | undefined = undefined;
-
+    let targetIndex: number | undefined;
     if (!editingItem) {
       if (positionMode === 'top') {
         targetIndex = 0;
       } else if (positionMode === 'bottom') {
         targetIndex = existingAyrans.length;
-      } else if (positionMode === 'after' && afterItemId) {
-        const foundIdx = existingAyrans.findIndex(a => a.id === afterItemId);
-        targetIndex = foundIdx !== -1 ? foundIdx + 1 : 0;
+      } else {
+        const idx = existingAyrans.findIndex(a => a.id === afterItemId);
+        targetIndex = idx !== -1 ? idx + 1 : 0;
       }
     }
 
@@ -86,8 +104,12 @@ export default function AyranForm({
     }
     setUploading(true);
     try {
+      const previousUrl = fotografUrl;
       const url = await uploadFotograf(file);
       setFotografUrl(url);
+      if (previousUrl && previousUrl !== originalFotografUrl.current) {
+        void deleteFotograf(previousUrl);
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       alert('Fotoğraf yüklenirken hata oluştu: ' + message);
@@ -103,230 +125,204 @@ export default function AyranForm({
   };
 
   return (
-    <div className="modal-overlay show" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-content drawer-content">
-        <div className="modal-header">
-          <h3 className="modal-title">
-            {editingItem ? 'Ayran Kaydını Düzenle' : 'Yeni Ayran Ekle'}
-          </h3>
-          <button className="modal-close" onClick={onClose} aria-label="Kapat">✕</button>
-        </div>
+    <div className="form-screen-backdrop" onClick={(e) => e.target === e.currentTarget && handleClose()}>
+      <section className="form-screen">
+        <header className="form-screen-header">
+          <button type="button" className="form-screen-back" onClick={handleClose} aria-label="Kapat">
+            <span className="form-screen-back-desktop">✕</span>
+            <span className="form-screen-back-mobile">←</span>
+          </button>
+          <h2 className="form-screen-title">
+            {editingItem ? 'Kaydı Düzenle' : 'Yeni Ayran'}
+          </h2>
+          {editingItem && onDelete ? (
+            <button type="button" className="form-screen-delete" onClick={onDelete} aria-label="Sil">🗑️</button>
+          ) : <span className="form-screen-header-spacer" />}
+        </header>
 
-        <form onSubmit={handleSubmit} className="form-body">
-          {/* Top Hero Photo Banner */}
-          <div className="hero-photo-container">
-            <div
-              className={`hero-photo-banner ${fotografUrl ? 'has-image' : ''}`}
-              onClick={() => !uploading && fileInputRef.current?.click()}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              style={{ cursor: uploading ? 'wait' : 'pointer' }}
+        <form onSubmit={handleSubmit} className="form-screen-body">
+          <div
+            className={`photo-drop ${fotografUrl ? 'has-image' : ''}`}
+            onClick={() => !uploading && fileInputRef.current?.click()}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            {uploading ? (
+              <div className="photo-drop-state">
+                <span className="photo-drop-spinner">⌛</span>
+                <span>Yükleniyor…</span>
+              </div>
+            ) : fotografUrl ? (
+              <>
+                <img src={fotografUrl} className="photo-drop-img" alt="Ayran görseli" />
+                <div className="photo-drop-overlay">
+                  <span className="photo-drop-change">Değiştir</span>
+                  <button
+                    type="button"
+                    className="photo-drop-remove"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (fotografUrl !== originalFotografUrl.current) {
+                        void deleteFotograf(fotografUrl);
+                      }
+                      setFotografUrl('');
+                    }}
+                  >
+                    Kaldır
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="photo-drop-placeholder">
+                <span className="photo-drop-icon">📸</span>
+                <span className="photo-drop-title">Fotoğraf Ekle</span>
+                <span className="photo-drop-sub">Sürükle bırak veya tıkla</span>
+              </div>
+            )}
+          </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={(e) => e.target.files?.[0] && handleImageFile(e.target.files[0])}
+          />
+
+          <div className="field-grid">
+            <label className="field">
+              <span className="field-label">Marka *</span>
+              <input
+                type="text"
+                className="field-input"
+                placeholder="Sütaş, Pınar, Özerhisar…"
+                value={marka}
+                onChange={(e) => setMarka(e.target.value)}
+                required
+                autoFocus
+              />
+            </label>
+            <label className="field">
+              <span className="field-label">Ürün Adı / Çeşidi</span>
+              <input
+                type="text"
+                className="field-input"
+                placeholder="Cam Şişe, Yayık, Tam Yağlı…"
+                value={urunAdi}
+                onChange={(e) => setUrunAdi(e.target.value)}
+              />
+            </label>
+          </div>
+
+          <div className="field">
+            <span className="field-label">Kategori *</span>
+            <div className="kategori-picker">
+              {kategoriler.map((kat) => (
+                <button
+                  key={kat}
+                  type="button"
+                  className={`kategori-chip ${kat}${kategori === kat ? ' selected' : ''}`}
+                  onClick={() => setKategori(kat)}
+                >
+                  <span>{kategoriEmoji[kat]}</span>
+                  {kategoriEtiketleri[kat]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {kategori === 'market_markasi' && (
+            <label className="field field-fade-in">
+              <span className="field-label">Satılan Market</span>
+              <input
+                type="text"
+                className="field-input"
+                placeholder="Migros, BİM, A101, File…"
+                value={marketAdi}
+                onChange={(e) => setMarketAdi(e.target.value)}
+              />
+            </label>
+          )}
+
+          {kategori === 'yoresel' && (
+            <label className="field field-fade-in">
+              <span className="field-label">Yöre / Şehir / Köy</span>
+              <input
+                type="text"
+                className="field-input"
+                placeholder="Balıkesir Susurluk, Konya, Erzurum…"
+                value={yore}
+                onChange={(e) => setYore(e.target.value)}
+              />
+            </label>
+          )}
+
+          <div className="field-toggle">
+            <div>
+              <span className="field-label">Ekşi ayran mı?</span>
+            </div>
+            <button
+              type="button"
+              className={`switch ${eksiMi ? 'on' : ''}`}
+              onClick={() => setEksiMi(prev => !prev)}
+              aria-pressed={eksiMi}
             >
-              {uploading ? (
-                <div className="hero-upload-state">
-                  <span className="spinner-icon">⌛</span>
-                  <span>Fotoğraf Yükleniyor…</span>
-                </div>
-              ) : fotografUrl ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={fotografUrl} className="hero-photo-img" alt="Ayran Görseli" />
-                  <div className="hero-photo-overlay">
-                    <span className="hero-action-btn">📸 Görseli Değiştir</span>
-                    <button
-                      type="button"
-                      className="hero-remove-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFotografUrl('');
-                      }}
-                      title="Fotoğrafı Kaldır"
-                    >
-                      Kaldır
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="hero-upload-placeholder">
-                  <div className="hero-icon-circle">📸</div>
-                  <span className="hero-upload-title">Ayran Fotoğrafı Ekle</span>
-                  <span className="hero-upload-sub">Sürükleyip bırakın veya seçmek için tıklayın</span>
-                </div>
+              <span className="switch-knob" />
+            </button>
+          </div>
+
+          {!editingItem && existingAyrans.length > 0 && (
+            <div className="field">
+              <span className="field-label">Listeye Ekleneceği Yer</span>
+              <p className="field-hint">Sonrasında listeden sürükleyerek sırasını değiştirebilirsin.</p>
+              <div className="position-toggle">
+                <button
+                  type="button"
+                  className={positionMode === 'top' ? 'selected' : ''}
+                  onClick={() => setPositionMode('top')}
+                >
+                  En Üste
+                </button>
+                <button
+                  type="button"
+                  className={positionMode === 'bottom' ? 'selected' : ''}
+                  onClick={() => setPositionMode('bottom')}
+                >
+                  En Alta
+                </button>
+                <button
+                  type="button"
+                  className={positionMode === 'after' ? 'selected' : ''}
+                  onClick={() => setPositionMode('after')}
+                >
+                  Şunun Altına
+                </button>
+              </div>
+
+              {positionMode === 'after' && (
+                <select
+                  className="field-select field-fade-in"
+                  value={afterItemId}
+                  onChange={(e) => setAfterItemId(e.target.value)}
+                  aria-label="Hangi ayranın altına eklensin"
+                >
+                  {existingAyrans.map((item, idx) => (
+                    <option key={item.id} value={item.id}>
+                      {idx + 1}. {item.marka}{item.urun_adi ? ` — ${item.urun_adi}` : ''}
+                    </option>
+                  ))}
+                </select>
               )}
             </div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={(e) => e.target.files?.[0] && handleImageFile(e.target.files[0])}
-            />
-          </div>
+          )}
 
-          <div className="form-sections">
-            {/* Marka ve Ürün Adı */}
-            <div className="form-row-grid">
-              <div className="form-group-item">
-                <label htmlFor="ayranMarka" className="form-label-styled">Marka *</label>
-                <input
-                  type="text"
-                  id="ayranMarka"
-                  className="form-input-styled"
-                  placeholder="Örn: Sütaş, Pınar, Özerhisar…"
-                  value={marka}
-                  onChange={(e) => setMarka(e.target.value)}
-                  required
-                  autoFocus
-                />
-              </div>
-
-              <div className="form-group-item">
-                <label htmlFor="ayranUrunAdi" className="form-label-styled">Ürün Adı / Çeşidi</label>
-                <input
-                  type="text"
-                  id="ayranUrunAdi"
-                  className="form-input-styled"
-                  placeholder="Örn: Cam Şişe, Yayık, Tam Yağlı…"
-                  value={urunAdi}
-                  onChange={(e) => setUrunAdi(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Kategori Seçimi */}
-            <div className="form-group-item">
-              <label className="form-label-styled">Kategori *</label>
-              <div className="radio-group-styled">
-                {kategoriler.map((kat) => (
-                  <button
-                    key={kat}
-                    type="button"
-                    className={`radio-pill-styled ${kat} ${kategori === kat ? 'selected' : ''}`}
-                    onClick={() => setKategori(kat)}
-                  >
-                    <span className="radio-pill-emoji">{kategoriEmoji[kat]}</span>
-                    <span className="radio-pill-label">{kategoriEtiketleri[kat]}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Market Adı veya Yöre (Koşullu) */}
-            {kategori === 'market_markasi' && (
-              <div className="form-group-item animated-fade-in">
-                <label htmlFor="ayranMarketAdi" className="form-label-styled">Satılan Market</label>
-                <input
-                  type="text"
-                  id="ayranMarketAdi"
-                  className="form-input-styled"
-                  placeholder="Örn: Migros, BİM, A101, File…"
-                  value={marketAdi}
-                  onChange={(e) => setMarketAdi(e.target.value)}
-                />
-              </div>
-            )}
-
-            {kategori === 'yoresel' && (
-              <div className="form-group-item animated-fade-in">
-                <label htmlFor="ayranYore" className="form-label-styled">Yöre / Şehir / Köy</label>
-                <input
-                  type="text"
-                  id="ayranYore"
-                  className="form-input-styled"
-                  placeholder="Örn: Balıkesir Susurluk, Konya, Erzurum…"
-                  value={yore}
-                  onChange={(e) => setYore(e.target.value)}
-                />
-              </div>
-            )}
-
-            {/* Ekşi mi? Toggle */}
-            <div className="form-group-item toggle-box">
-              <div className="toggle-info">
-                <span className="toggle-title">Ekşi Tat Profili</span>
-                <span className="toggle-sub">Ekşimsi / fermante ayran lezzeti var mı?</span>
-              </div>
-              <button
-                type="button"
-                className={`toggle-switch ${eksiMi ? 'active' : ''}`}
-                onClick={() => setEksiMi(prev => !prev)}
-                aria-pressed={eksiMi}
-              >
-                <span className="toggle-knob" />
-              </button>
-            </div>
-
-            {/* Sıralama Konumu Seçimi (Yalnızca Yeni Eklerken) */}
-            {!editingItem && existingAyrans.length > 0 && (
-              <div className="form-group-item position-selector-box">
-                <label className="form-label-styled">Sıralamadaki Yeri</label>
-                <div className="position-pills">
-                  <button
-                    type="button"
-                    className={`pos-pill ${positionMode === 'top' ? 'active' : ''}`}
-                    onClick={() => setPositionMode('top')}
-                  >
-                    🥇 En Üste (1. Sıra)
-                  </button>
-                  <button
-                    type="button"
-                    className={`pos-pill ${positionMode === 'bottom' ? 'active' : ''}`}
-                    onClick={() => setPositionMode('bottom')}
-                  >
-                    🔻 En Alta
-                  </button>
-                  <button
-                    type="button"
-                    className={`pos-pill ${positionMode === 'after' ? 'active' : ''}`}
-                    onClick={() => setPositionMode('after')}
-                  >
-                    📌 Seçili Ayranın Altına
-                  </button>
-                </div>
-
-                {positionMode === 'after' && (
-                  <div className="select-after-wrapper animated-fade-in">
-                    <select
-                      className="form-select-styled"
-                      value={afterItemId}
-                      onChange={(e) => setAfterItemId(e.target.value)}
-                    >
-                      {existingAyrans.map((item, idx) => (
-                        <option key={item.id} value={item.id}>
-                          #{idx + 1} - {item.marka} {item.urun_adi ? `(${item.urun_adi})` : ''} sonrasına ekle
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Form Alt Aksiyonlar Barı */}
-          <div className="form-actions-sticky">
-            {editingItem && onDelete ? (
-              <button
-                type="button"
-                className="btn-danger-outline"
-                onClick={onDelete}
-              >
-                🗑️ Kaydı Sil
-              </button>
-            ) : <div />}
-
-            <div className="actions-right-group">
-              <button type="button" className="btn-secondary-styled" onClick={onClose}>
-                Vazgeç
-              </button>
-              <button type="submit" className="btn-primary-styled" disabled={uploading}>
-                {uploading ? 'Yükleniyor…' : editingItem ? 'Güncelle' : 'Kaydet'}
-              </button>
-            </div>
+          <div className="form-screen-actions">
+            <button type="button" className="btn-quiet" onClick={handleClose}>Vazgeç</button>
+            <button type="submit" className="btn-primary" disabled={uploading}>
+              {uploading ? 'Yükleniyor…' : editingItem ? 'Güncelle' : 'Kaydet'}
+            </button>
           </div>
         </form>
-      </div>
+      </section>
     </div>
   );
 }
-

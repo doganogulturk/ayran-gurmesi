@@ -7,10 +7,10 @@ Ayran Gurmesi, içtiğiniz ayranları kaydedebileceğiniz, kategori ve tat profi
 - Ayran kaydı oluşturma, düzenleme ve silme
 - Kategori bazlı filtreleme: Yaygın, Market Markası, Yöresel
 - Ekşi / ekşi olmayan ayranlara göre filtreleme
-- Sürükle-bırak veya oklarla liste sıralama
+- Sürükle-bırak ile liste sıralama (otomatik kaydedilir)
 - Supabase veritabanı ile veri saklama
-- Supabase Storage ile fotoğraf yükleme
-- Mobil uyumlu ve modern arayüz
+- Supabase Storage ile fotoğraf yükleme (kayıt silinince fotoğraf da temizlenir)
+- Masaüstünde kenar çubuğu + yan panel, mobilde tam ekran akış
 
 ## Teknolojiler
 
@@ -58,9 +58,12 @@ Tarayıcıda `http://localhost:3000` adresini açın.
 
 ## Proje Yapısı
 
-- `src/app/page.tsx`: Ana sayfa, listeleme ve filtreleme mantığı
-- `src/components/AyranForm.tsx`: Ayran ekleme / düzenleme modal formu
-- `src/lib/ayranlar.ts`: Supabase CRUD ve sıralama işlemleri
+- `src/app/page.tsx`: Uygulama kabuğu, listeleme, filtreleme ve sürükle-bırak sıralama
+- `src/components/Sidebar.tsx`: Masaüstü kenar çubuğu (navigasyon, kategori filtreleri, istatistik)
+- `src/components/AyranRow.tsx`: Liste satırı ve sürüklenebilir varyantı
+- `src/components/AyranForm.tsx`: Ayran ekleme / düzenleme paneli
+- `src/lib/ayranlar.ts`: Supabase CRUD, sıralama ve fotoğraf işlemleri
+- `src/lib/sort.ts`: Ortak sıralama mantığı
 - `src/lib/supabase.ts`: Supabase istemcisi yapılandırması
 - `src/types/ayran.ts`: Ayran veri tipleri ve kategori tanımları
 - `src/app/globals.css`: Uygulama stil dosyası
