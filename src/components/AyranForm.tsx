@@ -4,6 +4,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AyranEntry, Kategori, kategoriler, kategoriEtiketleri } from '../types/ayran';
 import { uploadFotograf, deleteFotograf } from '../lib/ayranlar';
+import { useIsDesktop } from '../hooks/useIsDesktop';
 
 interface AyranFormProps {
   isOpen: boolean;
@@ -31,7 +32,9 @@ export default function AyranForm({
   onSave,
   onDelete,
 }: AyranFormProps) {
+  const isDesktop = useIsDesktop();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const markaRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
   const [marka, setMarka] = useState(editingItem?.marka ?? '');
@@ -62,6 +65,12 @@ export default function AyranForm({
     return () => window.removeEventListener('keydown', handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, fotografUrl]);
+
+  // Marka alanına yalnızca masaüstünde odaklanılıyor; mobilde otomatik odak
+  // ekran klavyesini anında açıp formun görünümünü bozuyor.
+  useEffect(() => {
+    if (isOpen && isDesktop) markaRef.current?.focus();
+  }, [isOpen, isDesktop]);
 
   if (!isOpen) return null;
 
@@ -192,13 +201,13 @@ export default function AyranForm({
             <label className="field">
               <span className="field-label">Marka *</span>
               <input
+                ref={markaRef}
                 type="text"
                 className="field-input"
                 placeholder="Sütaş, Pınar, Özerhisar…"
                 value={marka}
                 onChange={(e) => setMarka(e.target.value)}
                 required
-                autoFocus
               />
             </label>
             <label className="field">
